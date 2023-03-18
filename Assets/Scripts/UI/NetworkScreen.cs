@@ -23,11 +23,11 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     private void OnConnectBtnClick()
     {
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
-        int port = System.Convert.ToInt32("2000");//portInputField.text);
+        int port = System.Convert.ToInt32("25565");//portInputField.text);
 
         if (tcpConnection)
         {
-            NetworkManager.Instance.StartTcpClient(ipAddress, addressInputField.text, port);
+            NetworkManager.Instance.StartTcpClient(ipAddress, port);
         }
         else
         {
@@ -40,11 +40,12 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
 
     private void OnStartServerBtnClick()
     {
-        int port = System.Convert.ToInt32("2000");//portInputField.text);
+        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
+        int port = System.Convert.ToInt32("25565");//portInputField.text);
 
         if (tcpConnection)
         {
-            NetworkManager.Instance.StartTcpServer("127.0.0.1", port);//addressInputField.text, port);
+            NetworkManager.Instance.StartTcpServer(ipAddress, port);//addressInputField.text, port);
         }
         else
         {

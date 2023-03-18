@@ -19,11 +19,11 @@ public class TcpClientConnection
 
     private Logger logger;
 
-    public TcpClientConnection(string server, int port, IReceiveData receiver = null, Logger logger = null)
+    public TcpClientConnection(IPAddress ip, int port, IReceiveData receiver = null, Logger logger = null)
     {
         try
         {
-            connectionData = new ConnectionData("localhost", port);
+            connectionData = new ConnectionData(ip, port);
 
             receiveThread = new Thread(new ThreadStart(OnReceive));
             receiveThread.IsBackground = true;
@@ -56,7 +56,7 @@ public class TcpClientConnection
     {
         try
         {
-            connection = new TcpClient(new IPEndPoint(IPAddress.Parse(connectionData.server), connectionData.port));
+            connection = new TcpClient("localhost", 8052);//new IPEndPoint(connectionData.server, connectionData.port));
             Byte[] bytes = new Byte[1024];
             while (true)
             {		
@@ -67,13 +67,12 @@ public class TcpClientConnection
                     while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
                     {
                         var incommingData = new byte[length];
-                        Array.Copy(bytes, 0, incommingData, 0, length);
-                        // Convert byte array to string message. 						
+                        Array.Copy(bytes, 0, incommingData, 0, length);		
                         string serverMessage = Encoding.ASCII.GetString(incommingData);
-                        Debug.Log("server message received as: " + serverMessage);
+                        //logger.SendLog("server message received as: " + serverMessage);
+                        logger.SendLog("server: " + serverMessage);
 
-                        DataReceived dataReceived = new DataReceived();
-                        dataReceived.data = bytes;
+                        DataReceived dataReceived = new DataReceived(bytes, new IPEndPoint(connectionData.server, connectionData.port));
 
                         lock (handler)
                         {
@@ -99,17 +98,9 @@ public class TcpClientConnection
         {	
             NetworkStream stream = connection.GetStream();
             if (stream.CanWrite)
-            {
-                string clientMessage = "This is a message from one of your clients.";
-                // Convert string message to byte array.                 
-                byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
-                // Write byte array to socketConnection stream.                 
-                stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
-                Debug.Log("Client sent his message - should be received by server");
-
-                //stream.Write(data, 0, data.Length);
-
-                logger.SendLog("Client sent his message");
+            {            
+                stream.Write(data, 0, data.Length);
+                //logger.SendLog("Client sent his message - should be received by server");
             }
         }
         catch (SocketException socketException)

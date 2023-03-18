@@ -67,6 +67,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
                 {
                     NetworkManager.Instance.SendToUdpServer(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
                 }
+                messages.text += inputMessage.text + Environment.NewLine;
             }
 
             inputMessage.ActivateInputField();

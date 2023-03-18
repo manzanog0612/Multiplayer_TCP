@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-public class TcpServerConnection : MonoBehaviour
+public class TcpServerConnection
 {
     private TcpListener listener;
     private Thread listenerThread;
@@ -20,9 +20,9 @@ public class TcpServerConnection : MonoBehaviour
 
     private Logger logger;
 
-    public TcpServerConnection(string server, int port, IReceiveData receiver = null, Logger logger = null)
+    public TcpServerConnection(IPAddress ip, int port, IReceiveData receiver = null, Logger logger = null)
     {
-        connectionData = new ConnectionData(server, port);
+        connectionData = new ConnectionData(ip, port);
 
         listenerThread = new Thread(new ThreadStart(OnReceiveRequest));
         listenerThread.IsBackground = true;
@@ -51,7 +51,7 @@ public class TcpServerConnection : MonoBehaviour
     {
         try
         {
-            listener = new TcpListener(IPAddress.Parse(connectionData.server), connectionData.port);
+            listener = new TcpListener(IPAddress.Parse("127.0.0.1"), 8052);
             listener.Start();
             logger.SendLog("Server is listening");
             Byte[] bytes = new Byte[1024];
@@ -67,13 +67,12 @@ public class TcpServerConnection : MonoBehaviour
                         while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
                         {
                             var incommingData = new byte[length];
-                            Array.Copy(bytes, 0, incommingData, 0, length);
-                            // Convert byte array to string message. 							
+                            Array.Copy(bytes, 0, incommingData, 0, length);			
                             string clientMessage = Encoding.ASCII.GetString(incommingData);
-                            Debug.Log("client message received as: " + clientMessage);
+                            //logger.SendLog("client message received as: " + clientMessage);
+                            logger.SendLog("client: " + clientMessage);
 
-                            DataReceived dataReceived = new DataReceived();
-                            dataReceived.data = bytes;
+                            DataReceived dataReceived = new DataReceived(bytes, new IPEndPoint(connectionData.server, connectionData.port));
 
                             lock (handler)
                             {
@@ -97,20 +96,12 @@ public class TcpServerConnection : MonoBehaviour
             return;
         }
         try
-        {
-            // Get a stream object for writing. 			
+        {		
             NetworkStream stream = connectedClient.GetStream();
             if (stream.CanWrite)
             {
-                string serverMessage = "This is a message from your server.";
-                // Convert string message to byte array.                 
-                byte[] serverMessageAsByteArray = Encoding.ASCII.GetBytes(serverMessage);
-                // Write byte array to socketConnection stream.               
-                stream.Write(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
-                Debug.Log("Server sent his message - should be received by client");
-
-                //stream.Write(data, 0, data.Length);
-                logger.SendLog("Server sent his message");
+                stream.Write(data, 0, data.Length);
+                //logger.SendLog("Server sent his message - should be received by client");
             }
         }
         catch (SocketException socketException)

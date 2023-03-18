@@ -97,21 +97,21 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     #endregion
 
     #region TCP
-    public void StartTcpServer(string server, int port)
+    public void StartTcpServer(IPAddress ip, int port)
     {
         isServer = true;
         this.port = port;
-        tcpServerConnection = new TcpServerConnection(server, port, this, logger);
+        tcpServerConnection = new TcpServerConnection(ip, port, this, logger);
     }
 
-    public void StartTcpClient(IPAddress ip, string server, int port)
+    public void StartTcpClient(IPAddress ip, int port)
     {
         isServer = false;
 
         this.port = port;
         this.ipAddress = ip;
 
-        tcpClientConnection = new TcpClientConnection(server, port, this, logger);
+        tcpClientConnection = new TcpClientConnection(ip, port, this, logger);
 
         AddClient(new IPEndPoint(ip, port));
     }
