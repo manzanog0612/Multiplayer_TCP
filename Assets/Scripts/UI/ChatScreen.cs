@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net;
-
+using System.Text;
 using UnityEngine.UI;
 
 using ASCIIEncoding = System.Text.ASCIIEncoding;
@@ -37,7 +37,17 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             }
         }
 
-        messages.text += ASCIIEncoding.UTF8.GetString(data) + Environment.NewLine;
+        string chat = ASCIIEncoding.UTF8.GetString(data);
+        string[] a = chat.Split('\0');
+
+        if (tcpConnection)
+        {
+            messages.text += a[0]+ "\n";
+        }
+        else
+        {
+            messages.text += ASCIIEncoding.UTF8.GetString(data) + Environment.NewLine;
+        }
     }
 
     private void OnEndEdit(string str)
@@ -55,7 +65,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
                     NetworkManager.Instance.UdpBroadcast(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
                 }
 
-                messages.text += inputMessage.text + Environment.NewLine;
+                messages.text += inputMessage.text + "\n";
             }
             else
             {
@@ -67,7 +77,6 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
                 {
                     NetworkManager.Instance.SendToUdpServer(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
                 }
-                messages.text += inputMessage.text + Environment.NewLine;
             }
 
             inputMessage.ActivateInputField();
