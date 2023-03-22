@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
+using ASCIIEncoding = System.Text.ASCIIEncoding;
 public class TcpServerConnection
 {
     private TcpListener listener;
@@ -51,10 +52,10 @@ public class TcpServerConnection
     {
         try
         {
-            listener = new TcpListener(IPAddress.Parse("127.0.0.1"), 8052);
+            listener = new TcpListener(connectionData.server, connectionData.port);
             listener.Start();
             logger.SendLog("Server is listening");
-            Byte[] bytes = new Byte[1024];
+            
             while (true)
             {
                 using (connectedClient = listener.AcceptTcpClient())
@@ -63,16 +64,22 @@ public class TcpServerConnection
                     using (NetworkStream stream = connectedClient.GetStream())
                     {
                         int length;
-                        // Read incomming stream into byte arrary. 						
+                        // Read incomming stream into byte arrary. 		
+                        Byte[] bytes = new Byte[1024];				
                         while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
                         {
                             var incommingData = new byte[length];
                             Array.Copy(bytes, 0, incommingData, 0, length);			
-                            string clientMessage = Encoding.ASCII.GetString(incommingData);
+                            string clientMessage = ASCIIEncoding.UTF8.GetString(incommingData);
                             //logger.SendLog("client message received as: " + clientMessage);
                             logger.SendLog("client: " + clientMessage);
 
-                            DataReceived dataReceived = new DataReceived(bytes, new IPEndPoint(connectionData.server, connectionData.port));
+                            DataReceived dataReceived = new DataReceived((Byte[])bytes.Clone(), new IPEndPoint(connectionData.server, connectionData.port)); ;
+
+                            for (int i = 0; i < bytes.Length; i++)
+                            {
+                                bytes[i] = 0;
+                            }
 
                             lock (handler)
                             {

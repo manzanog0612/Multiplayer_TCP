@@ -3,8 +3,6 @@ using System.Net;
 using System.Text;
 using UnityEngine.UI;
 
-using ASCIIEncoding = System.Text.ASCIIEncoding;
-
 public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
 {
     public Text messages;
@@ -37,7 +35,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             }
         }
 
-        string chat = ASCIIEncoding.UTF8.GetString(data);
+        string chat = Encoding.UTF8.GetString(data);
         string[] a = chat.Split('\0');
 
         if (tcpConnection)
@@ -46,7 +44,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         }
         else
         {
-            messages.text += ASCIIEncoding.UTF8.GetString(data) + Environment.NewLine;
+            messages.text += Encoding.UTF8.GetString(data) + Environment.NewLine;
         }
     }
 
@@ -58,7 +56,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             {
                 if (tcpConnection)
                 {
-                    NetworkManager.Instance.TcpBroadcast(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
+                    NetworkManager.Instance.TcpBroadcast(Encoding.UTF8.GetBytes(inputMessage.text));
                 }
                 else
                 {
@@ -71,7 +69,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             {
                 if (tcpConnection)
                 {
-                    NetworkManager.Instance.SendToTcpServer(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
+                    NetworkManager.Instance.SendToTcpServer(Encoding.UTF8.GetBytes(inputMessage.text));
                 }
                 else
                 {

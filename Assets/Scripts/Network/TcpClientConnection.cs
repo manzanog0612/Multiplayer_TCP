@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
+using ASCIIEncoding = System.Text.ASCIIEncoding;
 public class TcpClientConnection
 {
     private TcpClient connection;
@@ -26,7 +27,7 @@ public class TcpClientConnection
             connectionData = new ConnectionData(ip, port);
 
             receiveThread = new Thread(new ThreadStart(OnReceive));
-            receiveThread.IsBackground = true;
+            receiveThread.IsBackground = false;
             receiveThread.Start();
 
             this.receiver = receiver;
@@ -56,23 +57,28 @@ public class TcpClientConnection
     {
         try
         {
-            connection = new TcpClient("localhost", 8052);//new IPEndPoint(connectionData.server, connectionData.port));
-            Byte[] bytes = new Byte[1024];
+            connection = new TcpClient("localhost", connectionData.port);//new TcpClient("localhost", 8052);//;
             while (true)
             {		
                 using (NetworkStream stream = connection.GetStream())
                 {
                     int length;
+                    Byte[] bytes = new Byte[1024];
                     // Read incomming stream into byte arrary. 					
                     while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
                     {
                         var incommingData = new byte[length];
                         Array.Copy(bytes, 0, incommingData, 0, length);		
-                        string serverMessage = Encoding.ASCII.GetString(incommingData);
+                        string serverMessage = ASCIIEncoding.UTF8.GetString(incommingData);
                         //logger.SendLog("server message received as: " + serverMessage);
                         logger.SendLog("server: " + serverMessage);
 
-                        DataReceived dataReceived = new DataReceived(bytes, new IPEndPoint(connectionData.server, connectionData.port));
+                        DataReceived dataReceived = new DataReceived((Byte[])bytes.Clone(), new IPEndPoint(connectionData.server, connectionData.port));
+
+                        for (int i = 0; i < bytes.Length; i++)
+                        {
+                            bytes[i] = 0;
+                        }
 
                         lock (handler)
                         {
