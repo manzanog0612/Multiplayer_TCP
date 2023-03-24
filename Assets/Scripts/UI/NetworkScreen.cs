@@ -23,7 +23,7 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     private void OnConnectBtnClick()
     {
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
-        int port = 8052;//portInputField.text);
+        int port = 8053;//portInputField.text);
 
         if (tcpConnection)
         {
@@ -41,7 +41,7 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     private void OnStartServerBtnClick()
     {
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
-        int port = 8052;//portInputField.text);)
+        int port = 8053;//portInputField.text);)
 
         if (tcpConnection)
         {
