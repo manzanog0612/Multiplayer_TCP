@@ -1,24 +1,25 @@
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 
 public class StringMessage : IMessage<string>
 {
-    private string data;
+    #region PRIVATE_FIELDS
+    private string data = null;
+    #endregion
+
+    #region CONSTRUCTORS
+    public StringMessage() { }
 
     public StringMessage(string data)
     {
         this.data = data;   
     }
+    #endregion
 
-    public StringMessage()
-    {
-
-    }
-
+    #region PUBLIC_METHODS
     public string Deserialize(byte[] message)
     {
-        string outdata = string.Empty;
+        string outData = string.Empty;
 
         for (int i = 0; i < (message.Length - 4) / 2 ; i++)
         {
@@ -29,10 +30,10 @@ public class StringMessage : IMessage<string>
                 charBytes.Add(message[4 + (i * 2) + j]);
             }
 
-            outdata += BitConverter.ToChar(charBytes.ToArray());
+            outData += BitConverter.ToChar(charBytes.ToArray());
         }
 
-        return outdata;
+        return outData;
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -53,4 +54,5 @@ public class StringMessage : IMessage<string>
 
         return outData.ToArray();
     }
+    #endregion
 }

@@ -1,25 +1,34 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 
+using UnityEngine;
 using UnityEngine.UI;
 
 public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
 {
-    public Button connectBtn;
-    public Button startServerBtn;
-    public InputField portInputField;
-    public InputField addressInputField;
+    #region EXPOSED_FIELDS
+    [SerializeField] ChatScreen chatScreen = null;
 
-    [NonSerialized] private bool tcpConnection = true;
+    [SerializeField] Button connectBtn = null;
+    [SerializeField] Button startServerBtn = null;
+    [SerializeField] InputField portInputField = null;
+    [SerializeField] InputField addressInputField = null;
+    #endregion
 
+    #region PRIVATE_FIELDS
+    private bool tcpConnection = true;
+    #endregion
+
+    #region INITIALIZATION
     protected override void Initialize()
     {
         connectBtn.onClick.AddListener(OnConnectBtnClick);
         startServerBtn.onClick.AddListener(OnStartServerBtnClick);
 
-        tcpConnection = NetworkManager.Instance.tcpConnection;
+        tcpConnection = NetworkManager.Instance.TcpConnection;
     }
+    #endregion
 
+    #region PRIVATE_METHODS
     private void OnConnectBtnClick()
     {
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
@@ -33,8 +42,8 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
         {
             NetworkManager.Instance.StartUdpClient(ipAddress, port);
         }
-       
-        
+
+
         SwitchToChatScreen();
     }
 
@@ -57,7 +66,8 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
 
     private void SwitchToChatScreen()
     {
-        ChatScreen.Instance.gameObject.SetActive(true);
+        chatScreen.gameObject.SetActive(true);
         gameObject.SetActive(false);
     }
+    #endregion
 }

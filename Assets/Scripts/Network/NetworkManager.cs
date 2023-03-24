@@ -20,36 +20,49 @@ public struct Client
 
 public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveData
 {
-    public bool tcpConnection = true;
-    public Logger logger = null;
+    #region EXPOSED_FIELDS
+    [SerializeField] private bool tcpConnection = true;
+    [SerializeField] private int timeOut = 30;
+    [SerializeField] private Logger logger = null;
+    #endregion
 
-    public IPAddress ipAddress
-    {
-        get; private set;
-    }
-
-    public int port
-    {
-        get; private set;
-    }
-
-    public bool isServer
-    {
-        get; private set;
-    }
-
-    public int TimeOut = 30;
-
-    public Action<byte[], IPEndPoint> OnReceiveEvent;
-
-    private UdpConnection udpConnection;
-    private TcpClientConnection tcpClientConnection;
-    private TcpServerConnection tcpServerConnection;
+    #region PRIVATE_FIELDS
+    private UdpConnection udpConnection = null;
+    private TcpClientConnection tcpClientConnection = null;
+    private TcpServerConnection tcpServerConnection = null;
 
     private readonly Dictionary<int, Client> clients = new Dictionary<int, Client>();
     private readonly Dictionary<IPEndPoint, int> ipToId = new Dictionary<IPEndPoint, int>();
 
-    int clientId = 0; // This id should be generated during first handshake
+    private int clientId = 0; // This id should be generated during first handshake
+    #endregion
+
+    #region PROPERTIES
+    public IPAddress ipAddress { get; private set; }
+    public int port { get; private set; }
+    public bool isServer { get; private set; }
+    public bool TcpConnection { get; }
+    #endregion
+
+    #region ACTIONS
+    public Action<byte[], IPEndPoint> OnReceiveEvent = null;
+    public Action<bool> onStartConnection = null;
+    #endregion
+
+    #region UNITY_CALLS
+    private void Update()
+    {
+        // Flush the data in main thread
+        if (tcpClientConnection != null)
+            tcpClientConnection.FlushReceiveData();
+
+        if (tcpServerConnection != null)
+            tcpServerConnection.FlushReceiveData();
+
+        if (udpConnection != null)
+            udpConnection.FlushReceiveData();
+    }
+    #endregion
 
     #region UDP
     public void StartUdpServer(int port)
@@ -57,6 +70,10 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
         isServer = true;
         this.port = port;
         udpConnection = new UdpConnection(port, this);
+
+        onStartConnection.Invoke(isServer);
+
+        Debug.Log("Server created");
     }
 
     public void StartUdpClient(IPAddress ip, int port)
@@ -69,6 +86,8 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
         udpConnection = new UdpConnection(ip, port, this);
 
         AddClient(new IPEndPoint(ip, port));
+
+        onStartConnection.Invoke(isServer);
     }
 
     public void OnReceiveDataUdp(byte[] data, IPEndPoint ip)
@@ -102,6 +121,8 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
         isServer = true;
         this.port = port;
         tcpServerConnection = new TcpServerConnection(ip, port, this, logger);
+
+        onStartConnection.Invoke(isServer);
     }
 
     public void StartTcpClient(IPAddress ip, int port)
@@ -114,6 +135,8 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
         tcpClientConnection = new TcpClientConnection(ip, port, this, logger);
 
         AddClient(new IPEndPoint(ip, port));
+
+        onStartConnection.Invoke(isServer);
     }
 
     public void OnReceiveDataTcp(byte[] data, IPEndPoint ip)
@@ -143,19 +166,7 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     }
     #endregion
 
-    private void Update()
-    {
-        // Flush the data in main thread
-        if (tcpClientConnection != null)
-            tcpClientConnection.FlushReceiveData();
-
-        if (tcpServerConnection != null)
-            tcpServerConnection.FlushReceiveData();
-
-        if (udpConnection != null)
-            udpConnection.FlushReceiveData();
-    }
-
+    #region PRIVATE_METHODS
     private void AddClient(IPEndPoint ip)
     {
         if (!ipToId.ContainsKey(ip))
@@ -179,4 +190,5 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
             clients.Remove(ipToId[ip]);
         }
     }
+    #endregion
 }

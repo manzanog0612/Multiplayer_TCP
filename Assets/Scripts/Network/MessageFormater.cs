@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 public class MessageFormater
 {
+    #region PUBLIC_METHODS
     public MESSAGE_TYPE GetMessageType(byte[] data)
     {
         List<byte> messageTypeBytes = new List<byte>();
@@ -16,4 +17,5 @@ public class MessageFormater
 
         return messageType;
     }
+    #endregion
 }

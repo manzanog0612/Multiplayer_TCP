@@ -5,18 +5,20 @@ using UnityEngine;
 
 public class Vector2Message : IMessage<Vector2>
 {
-    private Vector2 data;
+    #region PRIVATE_FIELDS
+    private Vector2? data = null;
+    #endregion
+
+    #region CONSTRUCTORS
+    public Vector2Message() { }
 
     public Vector2Message(Vector2 data)
     {
         this.data = data;
     }
+    #endregion
 
-    public Vector2Message()
-    {
-
-    }
-
+    #region PUBLIC_METHODS
     public Vector2 Deserialize(byte[] message)
     {
         Vector2 outData;
@@ -38,9 +40,10 @@ public class Vector2Message : IMessage<Vector2>
 
         outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
 
-        outData.AddRange(BitConverter.GetBytes(data.x));
-        outData.AddRange(BitConverter.GetBytes(data.y));
+        outData.AddRange(BitConverter.GetBytes(((Vector2)data).x));
+        outData.AddRange(BitConverter.GetBytes(((Vector2)data).y));
 
         return outData.ToArray();
     }
+    #endregion
 }
