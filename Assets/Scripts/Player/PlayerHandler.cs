@@ -1,13 +1,11 @@
 using System;
-
 using UnityEngine;
 
 public class PlayerHandler : MonoBehaviour
 {
     #region EXPOSED_FIELDS
-    [SerializeField] private MovableSquare square = null;
+    //[SerializeField] private MovableSquare square = null;
     [SerializeField] private int speed = 50;
-    [SerializeField] private bool controlsSquare = false;
     #endregion
 
     #region PRIVATE_FIELDS
@@ -19,13 +17,12 @@ public class PlayerHandler : MonoBehaviour
 
     #region ACTIONS
     private Action<PlayerData> onChangePlayerData = null;
-    private Action<string> onReceiveMessage = null;
     #endregion    
 
     #region UNITY_CALLS
     public void Update()
     {
-        if (!initialized)
+        if (!initialized || !Application.isFocused)
         {
             return;
         }
@@ -39,30 +36,16 @@ public class PlayerHandler : MonoBehaviour
     #endregion
 
     #region PUBLIC_METHODS
-    public void Init(Action<PlayerData> onChangePlayerData, Action<string> onReceiveMessage)
+    public void Init(Action<PlayerData> onChangePlayerData)
     {
         this.onChangePlayerData = onChangePlayerData;
-        this.onReceiveMessage += onReceiveMessage;
 
         initialized = true;
     }
 
-    public void SetPlaterControlsSquare(bool controlsSquare)
+    public void TurnOnSquare()
     {
-        this.controlsSquare = controlsSquare;
-    }
-
-    public void SetPlayerData(PlayerData playerData)
-    {
-        if (playerData.movement != null)
-        { 
-            square.Move((Vector2)playerData.movement);
-        }  
-        
-        if (playerData.message != null)
-        {
-            onReceiveMessage.Invoke(playerData.message);
-        }
+        //square.gameObject.SetActive(true);
     }
 
     public void SendChat(string message)
@@ -75,11 +58,6 @@ public class PlayerHandler : MonoBehaviour
     #region PRIVATE_METHODS
     private void DetectInput()
     {
-        if (!controlsSquare)
-        {
-            return;
-        }
-
         movement = Vector2.zero;
 
         if (Input.GetKey(KeyCode.LeftArrow))
@@ -105,7 +83,7 @@ public class PlayerHandler : MonoBehaviour
     {
         if (movement != Vector2.zero)
         {
-            square.Move(movement);
+            //square.Move(movement);
             playerData.movement = movement;
             onChangePlayerData.Invoke(playerData);
         }

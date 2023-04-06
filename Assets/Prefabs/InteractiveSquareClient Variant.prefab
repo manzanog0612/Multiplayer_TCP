@@ -109,7 +109,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3187199512609620862, guid: 790300f1286801a41b505b0dd249281c, type: 3}
       propertyPath: m_Name
-      value: InteractiveSquareClient
+      value: InteractiveSquareClient Variant
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 790300f1286801a41b505b0dd249281c, type: 3}

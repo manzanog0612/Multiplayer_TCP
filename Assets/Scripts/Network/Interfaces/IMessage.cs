@@ -4,13 +4,15 @@ using UnityEngine;
 
 public enum MESSAGE_TYPE
 {
-    STRING,
+    HAND_SHAKE = -2,
+    CLIENTS_LIST = -1,
+    STRING = 0,
     VECTOR2
 }
 
 public interface IMessage<T>
 {
     public MESSAGE_TYPE GetMessageType();
-    public byte[] Serialize();
+    public byte[] Serialize(float admissionTime);
     public T Deserialize(byte[] message);
 }

@@ -1,20 +1,24 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 
 using UnityEngine;
 
+[Serializable]
 public struct Client
 {
     public float timeStamp;
     public int id;
     public IPEndPoint ipEndPoint;
+    public Dictionary<MESSAGE_TYPE, int> lastMessagesIds;
 
-    public Client(IPEndPoint ipEndPoint, int id, float timeStamp)
+    public Client(IPEndPoint ipEndPoint, int id, float timeStamp, Dictionary<MESSAGE_TYPE, int> lastMessagesIds)
     {
         this.timeStamp = timeStamp;
         this.id = id;
         this.ipEndPoint = ipEndPoint;
+        this.lastMessagesIds = lastMessagesIds;
     }
 }
 
@@ -32,9 +36,13 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     private TcpServerConnection tcpServerConnection = null;
 
     private readonly Dictionary<int, Client> clients = new Dictionary<int, Client>();
-    private readonly Dictionary<IPEndPoint, int> ipToId = new Dictionary<IPEndPoint, int>();
+    private readonly Dictionary<(IPEndPoint, float), int> ipToId = new Dictionary<(IPEndPoint, float), int>();
 
     private int clientId = 0; // This id should be generated during first handshake
+
+    private MessageFormater messageFormater = new MessageFormater();
+
+    private bool waitingHandShakeBack = false;
     #endregion
 
     #region PROPERTIES
@@ -42,25 +50,99 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     public int port { get; private set; }
     public bool isServer { get; private set; }
     public bool TcpConnection { get; }
-    #endregion
 
-    #region ACTIONS
-    public Action<byte[], IPEndPoint> OnReceiveEvent = null;
+    public float admissionTimeStamp { get; private set; }
+#endregion
+
+#region ACTIONS
+public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
     public Action<bool> onStartConnection = null;
+    public Action<int> onAddNewClient = null;
     #endregion
 
     #region UNITY_CALLS
     private void Update()
     {
         // Flush the data in main thread
-        if (tcpClientConnection != null)
-            tcpClientConnection.FlushReceiveData();
+        tcpClientConnection?.FlushReceiveData();
 
-        if (tcpServerConnection != null)
-            tcpServerConnection.FlushReceiveData();
+        tcpServerConnection?.FlushReceiveData();
 
-        if (udpConnection != null)
-            udpConnection.FlushReceiveData();
+        udpConnection?.FlushReceiveData();
+    }
+    #endregion
+
+    #region PUBLIC_METHODS
+    public void OnReceiveData(byte[] data, IPEndPoint ip)
+    {
+        MESSAGE_TYPE messageType = messageFormater.GetMessageType(data);
+        float timeStamp = messageFormater.GetAdmissionTime(data);
+
+        switch (messageType)
+        {
+            case MESSAGE_TYPE.HAND_SHAKE:
+                (long, int) message = new HandShakeMessage().Deserialize(data);
+                AddClient(ip, timeStamp);
+                ReceiveEvent();
+
+                if (isServer)
+                {
+                    UdpBroadcast(new ClientsListMessage(GetClientsList()).Serialize(-1)); //admission time doesn't matter in this case because server was the originator
+                }
+                break;
+            case MESSAGE_TYPE.CLIENTS_LIST:
+                if (waitingHandShakeBack)
+                {
+                    (long, float)[] clientsList = new ClientsListMessage().Deserialize(data);
+
+                    for (int i = 0; i < clientsList.Length; i++)
+                    {
+                        IPEndPoint client = new IPEndPoint(clientsList[i].Item1, port);
+                        AddClient(client, clientsList[i].Item2);
+                    }
+
+                    waitingHandShakeBack = false;
+                }
+                break;
+            case MESSAGE_TYPE.STRING:
+            case MESSAGE_TYPE.VECTOR2:
+                if (ipToId.ContainsKey((ip, timeStamp)))
+                {
+                    //int messageId = messageFormater.GetMessageId(data);
+                    //Dictionary<MESSAGE_TYPE, int> lastMessagesIds = clients[ipToId[ip]].lastMessagesIds;
+                    //
+                    //if (lastMessagesIds.ContainsKey(messageType))
+                    //{
+                    //    if (lastMessagesIds[messageType] <= messageId)
+                    //    {
+                    //        ReceiveEvent();
+                    //        lastMessagesIds[messageType] = messageId;
+                    //    }
+                    //    else
+                    //    {
+                    //        // Ignore message, it's old
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    lastMessagesIds.Add(messageType, messageId);
+                    //    ReceiveEvent();
+                    //}
+
+                    ReceiveEvent();//++
+                }
+                break;
+            default:
+                break;
+        }
+
+        void ReceiveEvent()
+        {
+            if (ipToId.ContainsKey((ip, timeStamp)))
+            {
+                OnReceiveEvent?.Invoke(data, ip, ipToId[(ip, timeStamp)]);
+            }
+        }
     }
     #endregion
 
@@ -85,17 +167,9 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
 
         udpConnection = new UdpConnection(ip, port, this);
 
-        AddClient(new IPEndPoint(ip, port));
+        SendHandShake();
 
         onStartConnection.Invoke(isServer);
-    }
-
-    public void OnReceiveDataUdp(byte[] data, IPEndPoint ip)
-    {
-        AddClient(ip);
-
-        if (OnReceiveEvent != null)
-            OnReceiveEvent.Invoke(data, ip);
     }
 
     public void SendToUdpServer(byte[] data)
@@ -134,24 +208,14 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
 
         tcpClientConnection = new TcpClientConnection(ip, port, this, logger);
 
-        AddClient(new IPEndPoint(ip, port));
+        SendHandShake();
 
         onStartConnection.Invoke(isServer);
     }
 
-    public void OnReceiveDataTcp(byte[] data, IPEndPoint ip)
-    {
-        logger.SendLog("RECEIVED DATA");
-
-        AddClient(ip);
-
-        if (OnReceiveEvent != null)
-            OnReceiveEvent.Invoke(data, ip);
-    }
-
     public void SendToTcpServer(byte[] data)
     {
-        tcpClientConnection.Send(data);
+        tcpClientConnection?.Send(data);
     }
 
     public void TcpBroadcast(byte[] data)
@@ -167,27 +231,79 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     #endregion
 
     #region PRIVATE_METHODS
-    private void AddClient(IPEndPoint ip)
+    private IEnumerator OnWaitForHandShake()
     {
-        if (!ipToId.ContainsKey(ip))
+        int maxWaitHandShakeBackTime = 5;
+        float time = 0;
+
+        while (time < maxWaitHandShakeBackTime && waitingHandShakeBack)
+        {
+            time += Time.deltaTime;
+
+            yield return null;
+        }
+
+        if (waitingHandShakeBack)
+        {
+            SendHandShake();
+        }
+    }
+
+    private void SendHandShake()
+    {
+        IPEndPoint client = new IPEndPoint(ipAddress, port);
+        admissionTimeStamp = Time.realtimeSinceStartup;
+
+        HandShakeMessage handShakeMessage = new HandShakeMessage((client.Address.Address, client.Port));
+        waitingHandShakeBack = true;
+        
+        if (tcpConnection)
+        {
+            SendToTcpServer(handShakeMessage.Serialize(admissionTimeStamp));
+        }
+        else
+        {
+            SendToUdpServer(handShakeMessage.Serialize(admissionTimeStamp));
+        }
+
+        StartCoroutine(OnWaitForHandShake());
+    }
+
+    private (long, float)[] GetClientsList()
+    {
+        List<(long, float)> clients = new List<(long, float)>();
+
+        foreach (var client in this.clients)
+        {
+            clients.Add((client.Value.ipEndPoint.Address.Address, client.Value.timeStamp));
+        }
+
+        return clients.ToArray();
+    }
+
+    private void AddClient(IPEndPoint ip, float realtimeSinceStartup)
+    {
+        if (!ipToId.ContainsKey((ip, realtimeSinceStartup)))
         {
             logger.SendLog("Adding client: " + ip.Address);
 
             int id = clientId;
-            ipToId[ip] = clientId;
+            ipToId[(ip, realtimeSinceStartup)] = clientId;
 
-            clients.Add(clientId, new Client(ip, id, Time.realtimeSinceStartup));
+            clients.Add(clientId, new Client(ip, id, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>()));
+
+            onAddNewClient?.Invoke(clientId);
 
             clientId++;
         }
     }
 
-    private void RemoveClient(IPEndPoint ip)
+    private void RemoveClient(IPEndPoint ip, float admissionTime)
     {
-        if (ipToId.ContainsKey(ip))
+        if (ipToId.ContainsKey((ip, admissionTime)))
         {
             logger.SendLog("Removing client: " + ip.Address);
-            clients.Remove(ipToId[ip]);
+            clients.Remove(ipToId[(ip, admissionTime)]);
         }
     }
     #endregion

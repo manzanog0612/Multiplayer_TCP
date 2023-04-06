@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using UnityEngine;
 
 public class GameManager : MonoBehaviourSingleton<GameManager>
@@ -8,10 +10,16 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 
     [Header("Players")]
     [SerializeField] private PlayerHandler player = null;
+
+    [Header("Game Configurations")]
+    [SerializeField] private MovableSquare squarePrefab = null;
+    [SerializeField] private Transform squaresHolder = null;
     #endregion
 
     #region PRIVATE_FIELDS
     private bool isServer = false;
+
+    private Dictionary<int,MovableSquare> playersSquares = new Dictionary<int, MovableSquare>();
     #endregion
 
     #region UNITY_CALLS
@@ -19,7 +27,13 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     {
         if (NetworkManager.Instance != null)
         { 
-            NetworkManager.Instance.onStartConnection -= OnStartConnection; 
+            NetworkManager.Instance.onStartConnection -= OnStartConnection;
+            NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
+        }
+
+        if (DataHandler.Instance != null)
+        {
+            DataHandler.Instance.onReceiveData -= OnReceivePlayerData;
         }
     }
     #endregion
@@ -27,25 +41,49 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     #region INITIALIZATION
     protected override void Initialize()
     {
-        DataHandler.Instance.onReceiveData = OnReceivePlayerData;
+        DataHandler.Instance.onReceiveData += OnReceivePlayerData;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
+        NetworkManager.Instance.onAddNewClient += OnAddNewClient;
 
         chatScreen.onSendChat = OnSendChat;
 
-        player.Init(DataHandler.Instance.SendData, chatScreen.AddText);
+        player.Init(DataHandler.Instance.SendPlayerData);
     }
     #endregion
 
     #region PRIVATE_METHODS
+    private void OnAddNewClient(int clientID)
+    {
+        MovableSquare square = Instantiate(squarePrefab, squaresHolder);
+
+        square.gameObject.transform.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+        square.SetText(clientID.ToString());
+
+        playersSquares.Add(clientID, square);
+    }
+
     private void OnStartConnection(bool isPlayerServer)
     {
         isServer = isPlayerServer;
-        player.SetPlaterControlsSquare(isServer);
+
+        if (isServer)
+        {
+            player.gameObject.SetActive(false);
+        }
+        else
+        {
+            player.TurnOnSquare();
+        }
     }
 
     private void OnReceivePlayerData(PlayerData playerData)
     {
-        player.SetPlayerData(playerData);
+        chatScreen.AddText(playerData.message);
+
+        if (!playerData.IdIsVoid() && playerData.movement != null)
+        {
+            playersSquares[playerData.id].Move((Vector2)playerData.movement);
+        }
     }
 
     private void OnSendChat(string chat)

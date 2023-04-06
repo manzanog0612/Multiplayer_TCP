@@ -9,7 +9,11 @@ public class PlayerDataMessage : IMessage<PlayerData>
     #endregion
 
     #region CONSTRUCTORS
-    public PlayerDataMessage() { }
+    public PlayerDataMessage(int id) 
+    {
+        data = new PlayerData();
+        data.id = id;
+    }
 
     public PlayerDataMessage(PlayerData data)
     {
@@ -20,7 +24,7 @@ public class PlayerDataMessage : IMessage<PlayerData>
     #region PUBLIC_METHODS
     public PlayerData Deserialize(byte[] data)
     {
-        PlayerData outData = new PlayerData();
+        PlayerData outData = this.data;
 
         MessageFormater messageFormater = new MessageFormater();
 
@@ -49,20 +53,20 @@ public class PlayerDataMessage : IMessage<PlayerData>
         throw new System.NotImplementedException();
     }
 
-    public byte[] Serialize()
+    public byte[] Serialize(float admissionTime)
     {
         List<byte> outData = new List<byte>();
 
         if (data.message != null)
         {
             StringMessage stringMessage = new StringMessage(data.message);
-            outData.AddRange(stringMessage.Serialize());
+            outData.AddRange(stringMessage.Serialize(admissionTime));
         }
 
         if (data.movement != null)
         {
             Vector2Message vector2Message = new Vector2Message((Vector2)data.movement);
-            outData.AddRange(vector2Message.Serialize());
+            outData.AddRange(vector2Message.Serialize(admissionTime));
         }
 
         return outData.ToArray();

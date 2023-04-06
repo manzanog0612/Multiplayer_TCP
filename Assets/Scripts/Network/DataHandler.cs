@@ -34,7 +34,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     #endregion
 
     #region PUBLIC_METHODS
-    public void OnReceiveDataEvent(byte[] data, IPEndPoint ep)
+    public void OnReceiveDataEvent(byte[] data, IPEndPoint ip, int clientId)
     {
         if (isServer)
         {
@@ -48,15 +48,15 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
             }
         }
 
-        PlayerDataMessage playerDataMessage = new PlayerDataMessage();
+        PlayerDataMessage playerDataMessage = new PlayerDataMessage(clientId);
 
         onReceiveData.Invoke(playerDataMessage.Deserialize(data));
     }
 
-    public void SendData(PlayerData playerData)
+    public void SendPlayerData(PlayerData playerData)
     {
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
-        byte[] message = playerDataMessage.Serialize();
+        byte[] message = playerDataMessage.Serialize(NetworkManager.Instance.admissionTimeStamp);
         SendData(message);
     }
 
@@ -67,12 +67,10 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
             if (tcpConnection)
             {
                 NetworkManager.Instance.TcpBroadcast(message);
-                //NetworkManager.Instance.TcpBroadcast(Encoding.UTF8.GetBytes(inputMessage.text));
             }
             else
             {
                 NetworkManager.Instance.UdpBroadcast(message);
-                //NetworkManager.Instance.UdpBroadcast(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
             }
         }
         else
@@ -80,12 +78,10 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
             if (tcpConnection)
             {
                 NetworkManager.Instance.SendToTcpServer(message);
-                //NetworkManager.Instance.SendToTcpServer(Encoding.UTF8.GetBytes(inputMessage.text));
             }
             else
             {
                 NetworkManager.Instance.SendToUdpServer(message);
-                //NetworkManager.Instance.SendToUdpServer(ASCIIEncoding.UTF8.GetBytes(inputMessage.text));
             }
         }
     }

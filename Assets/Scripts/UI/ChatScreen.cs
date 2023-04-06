@@ -19,14 +19,24 @@ public class ChatScreen : MonoBehaviour
     {
         inputMessage.onEndEdit.AddListener(OnEndEdit);
 
+        NetworkManager.Instance.onStartConnection += DisableInputIfServer;
+
         gameObject.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (NetworkManager.Instance != null)
+        { 
+            NetworkManager.Instance.onStartConnection -= DisableInputIfServer; 
+        }
     }
     #endregion
 
     #region PUBLIC_METHODS
     public void AddText(string str)
     {
-        if (str == "")
+        if (string.IsNullOrEmpty(str))
         {
             return;
         }
@@ -36,6 +46,11 @@ public class ChatScreen : MonoBehaviour
     #endregion
 
     #region PRIVATE_METHODS
+    private void DisableInputIfServer(bool isServer)
+    {
+        inputMessage.gameObject.SetActive(!isServer);
+    }
+
     private void OnEndEdit(string str)
     {
         if (str == "")

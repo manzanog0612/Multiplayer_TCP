@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-public class Vector2Message : IMessage<Vector2>
+public class Vector2Message : OrdenableMessage, IMessage<Vector2>
 {
     #region PRIVATE_FIELDS
     private Vector2? data = null;
@@ -23,8 +23,8 @@ public class Vector2Message : IMessage<Vector2>
     {
         Vector2 outData;
 
-        outData.x = BitConverter.ToSingle(message, 4);
-        outData.y = BitConverter.ToSingle(message, 8);
+        outData.x = BitConverter.ToSingle(message, 12);
+        outData.y = BitConverter.ToSingle(message, 16);
 
         return outData;
     }
@@ -34,11 +34,13 @@ public class Vector2Message : IMessage<Vector2>
         return MESSAGE_TYPE.VECTOR2;
     }
 
-    public byte[] Serialize()
+    public byte[] Serialize(float admissionTime)
     {
         List<byte> outData = new List<byte>();
 
         outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
+        outData.AddRange(BitConverter.GetBytes(admissionTime));
+        outData.AddRange(BitConverter.GetBytes(lastMessageId++));
 
         outData.AddRange(BitConverter.GetBytes(((Vector2)data).x));
         outData.AddRange(BitConverter.GetBytes(((Vector2)data).y));

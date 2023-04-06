@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public class StringMessage : IMessage<string>
+public class StringMessage : OrdenableMessage, IMessage<string>
 {
     #region PRIVATE_FIELDS
     private string data = null;
@@ -21,19 +21,22 @@ public class StringMessage : IMessage<string>
     {
         string outData = string.Empty;
 
-        for (int i = 0; i < (message.Length - 4) / 2 ; i++)
+        short charSize = 2;
+        short messageStartIndex = 12;
+
+        for (int i = 0; i < (message.Length - messageStartIndex) / charSize; i++)
         {
             List<byte> charBytes = new List<byte>();
 
-            for (int j = 0; j < 2; j++)
+            for (int j = 0; j < charSize; j++)
             {
-                charBytes.Add(message[4 + (i * 2) + j]);
+                charBytes.Add(message[messageStartIndex + (i * charSize) + j]);
             }
 
             outData += BitConverter.ToChar(charBytes.ToArray());
         }
 
-        return outData;
+        return outData + " " + new MessageFormater().GetMessageId(message);
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -41,11 +44,13 @@ public class StringMessage : IMessage<string>
         return MESSAGE_TYPE.STRING;
     }
 
-    public byte[] Serialize()
+    public byte[] Serialize(float admissionTime)
     {
         List<byte> outData = new List<byte>();
 
         outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
+        outData.AddRange(BitConverter.GetBytes(admissionTime));
+        outData.AddRange(BitConverter.GetBytes(lastMessageId++));
 
         for (int i = 0; i < data.Length; i++)
         {

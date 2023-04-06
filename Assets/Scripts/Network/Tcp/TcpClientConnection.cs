@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
+
 using UnityEngine;
 
 using ASCIIEncoding = System.Text.ASCIIEncoding;
@@ -47,8 +47,7 @@ public class TcpClientConnection
             while (dataReceivedQueue.Count > 0)
             {
                 DataReceived dataReceived = dataReceivedQueue.Dequeue();
-                if (receiver != null)
-                    receiver.OnReceiveDataTcp(dataReceived.data, dataReceived.ipEndPoint);
+                receiver?.OnReceiveData(dataReceived.data, dataReceived.ipEndPoint);
             }
         }
     }
