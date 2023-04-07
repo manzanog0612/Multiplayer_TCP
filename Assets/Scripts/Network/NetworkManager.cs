@@ -6,19 +6,23 @@ using System.Net;
 using UnityEngine;
 
 [Serializable]
-public struct Client
+public class Client
 {
     public float timeStamp;
     public int id;
     public IPEndPoint ipEndPoint;
     public Dictionary<MESSAGE_TYPE, int> lastMessagesIds;
+    public Vector2 position = Vector2.zero;
+    public Color color = Color.white;
 
-    public Client(IPEndPoint ipEndPoint, int id, float timeStamp, Dictionary<MESSAGE_TYPE, int> lastMessagesIds)
+    public Client(IPEndPoint ipEndPoint, int id, float timeStamp, Dictionary<MESSAGE_TYPE, int> lastMessagesIds, Vector2 position, Color color)
     {
         this.timeStamp = timeStamp;
         this.id = id;
         this.ipEndPoint = ipEndPoint;
         this.lastMessagesIds = lastMessagesIds;
+        this.position = position;
+        this.color = color;
     }
 }
 
@@ -35,7 +39,7 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     private TcpClientConnection tcpClientConnection = null;
     private TcpServerConnection tcpServerConnection = null;
 
-    private readonly Dictionary<int, Client> clients = new Dictionary<int, Client>();
+    private Dictionary<int, Client> clients = new Dictionary<int, Client>();
     private readonly Dictionary<(IPEndPoint, float), int> ipToId = new Dictionary<(IPEndPoint, float), int>();
 
     private int clientId = 0; // This id should be generated during first handshake
@@ -57,7 +61,7 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
 #region ACTIONS
 public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
     public Action<bool> onStartConnection = null;
-    public Action<int> onAddNewClient = null;
+    public Action<int, Vector2, Color> onAddNewClient = null;
     #endregion
 
     #region UNITY_CALLS
@@ -81,24 +85,31 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         switch (messageType)
         {
             case MESSAGE_TYPE.HAND_SHAKE:
-                (long, int) message = new HandShakeMessage().Deserialize(data);
-                AddClient(ip, timeStamp);
+                (long, int, Color) message = new HandShakeMessage().Deserialize(data);
+                AddClient(ip, timeStamp, Vector2.zero, message.Item3);
                 ReceiveEvent();
 
                 if (isServer)
                 {
-                    UdpBroadcast(new ClientsListMessage(GetClientsList()).Serialize(-1)); //admission time doesn't matter in this case because server was the originator
+                    if (tcpConnection)
+                    {
+                        TcpBroadcast(new ClientsListMessage(GetClientsList()).Serialize(-1));
+                    }
+                    else
+                    {
+                        UdpBroadcast(new ClientsListMessage(GetClientsList()).Serialize(-1)); //admission time doesn't matter in this case because server was the originator
+                    }
                 }
                 break;
             case MESSAGE_TYPE.CLIENTS_LIST:
                 if (waitingHandShakeBack)
                 {
-                    (long, float)[] clientsList = new ClientsListMessage().Deserialize(data);
+                    (long, float, Vector2, Color)[] clientsList = new ClientsListMessage().Deserialize(data);
 
                     for (int i = 0; i < clientsList.Length; i++)
                     {
                         IPEndPoint client = new IPEndPoint(clientsList[i].Item1, port);
-                        AddClient(client, clientsList[i].Item2);
+                        AddClient(client, clientsList[i].Item2, clientsList[i].Item3, clientsList[i].Item4);
                     }
 
                     waitingHandShakeBack = false;
@@ -127,7 +138,12 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
                     //{
                     //    lastMessagesIds.Add(messageType, messageId);
                     //    ReceiveEvent();
-                    //}
+                    //}}
+
+                    if (messageType == MESSAGE_TYPE.VECTOR2)
+                    {
+                        clients[ipToId[(ip, timeStamp)]].position = new Vector2Message().Deserialize(data);
+                    }
 
                     ReceiveEvent();//++
                 }
@@ -254,7 +270,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         IPEndPoint client = new IPEndPoint(ipAddress, port);
         admissionTimeStamp = Time.realtimeSinceStartup;
 
-        HandShakeMessage handShakeMessage = new HandShakeMessage((client.Address.Address, client.Port));
+        HandShakeMessage handShakeMessage = new HandShakeMessage((client.Address.Address, client.Port, new Color(RandNum(), RandNum(), RandNum(), 1)));
         waitingHandShakeBack = true;
         
         if (tcpConnection)
@@ -267,21 +283,26 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         }
 
         StartCoroutine(OnWaitForHandShake());
+
+        float RandNum()
+        {
+            return UnityEngine.Random.Range(0f, 1f);
+        }
     }
 
-    private (long, float)[] GetClientsList()
+    private (long, float, Vector2, Color)[] GetClientsList()
     {
-        List<(long, float)> clients = new List<(long, float)>();
+        List<(long, float, Vector2, Color)> clients = new List<(long, float, Vector2, Color)>();
 
         foreach (var client in this.clients)
         {
-            clients.Add((client.Value.ipEndPoint.Address.Address, client.Value.timeStamp));
+            clients.Add((client.Value.ipEndPoint.Address.Address, client.Value.timeStamp, client.Value.position, client.Value.color));
         }
 
         return clients.ToArray();
     }
 
-    private void AddClient(IPEndPoint ip, float realtimeSinceStartup)
+    private void AddClient(IPEndPoint ip, float realtimeSinceStartup, Vector2 position, Color color)
     {
         if (!ipToId.ContainsKey((ip, realtimeSinceStartup)))
         {
@@ -290,9 +311,9 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
             int id = clientId;
             ipToId[(ip, realtimeSinceStartup)] = clientId;
 
-            clients.Add(clientId, new Client(ip, id, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>()));
+            clients.Add(clientId, new Client(ip, id, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>(), position, color));
 
-            onAddNewClient?.Invoke(clientId);
+            onAddNewClient?.Invoke(clientId, position, color);
 
             clientId++;
         }

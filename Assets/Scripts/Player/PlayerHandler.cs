@@ -4,7 +4,6 @@ using UnityEngine;
 public class PlayerHandler : MonoBehaviour
 {
     #region EXPOSED_FIELDS
-    //[SerializeField] private MovableSquare square = null;
     [SerializeField] private int speed = 50;
     #endregion
 
@@ -43,11 +42,6 @@ public class PlayerHandler : MonoBehaviour
         initialized = true;
     }
 
-    public void TurnOnSquare()
-    {
-        //square.gameObject.SetActive(true);
-    }
-
     public void SendChat(string message)
     {
         playerData.message = message;
@@ -83,14 +77,15 @@ public class PlayerHandler : MonoBehaviour
     {
         if (movement != Vector2.zero)
         {
-            //square.Move(movement);
             playerData.movement = movement;
+            playerData.position += movement;
             onChangePlayerData.Invoke(playerData);
         }
     }
 
     private void ResetData()
     {
+        movement = Vector2.zero;
         playerData.movement = null;
         playerData.message = null;
     }

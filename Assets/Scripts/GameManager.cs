@@ -52,12 +52,12 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     #endregion
 
     #region PRIVATE_METHODS
-    private void OnAddNewClient(int clientID)
+    private void OnAddNewClient(int clientID, Vector2 position, Color color)
     {
         MovableSquare square = Instantiate(squarePrefab, squaresHolder);
 
-        square.gameObject.transform.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
-        square.SetText(clientID.ToString());
+        square.SetPosition(position);
+        square.SetColor(color);
 
         playersSquares.Add(clientID, square);
     }
@@ -70,10 +70,6 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         {
             player.gameObject.SetActive(false);
         }
-        else
-        {
-            player.TurnOnSquare();
-        }
     }
 
     private void OnReceivePlayerData(PlayerData playerData)
@@ -82,7 +78,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 
         if (!playerData.IdIsVoid() && playerData.movement != null)
         {
-            playersSquares[playerData.id].Move((Vector2)playerData.movement);
+            playersSquares[playerData.id].SetPosition((Vector2)playerData.position);
         }
     }
 

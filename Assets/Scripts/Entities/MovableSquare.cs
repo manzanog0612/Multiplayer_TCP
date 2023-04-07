@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MovableSquare : MonoBehaviour
 {
@@ -11,9 +12,9 @@ public class MovableSquare : MonoBehaviour
         rectTransform.anchoredPosition += movement;
     }
 
-    public void SetText(string txt)
+    public void SetColor(Color color)
     {
-        text.text = txt;
+        rectTransform.GetComponent<Image>().color = color;
     }
 
     public void SetPosition(Vector2 position)
