@@ -126,8 +126,8 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
                     {
                         if (lastMessagesIds[messageType] <= messageId)
                         {
-                            ReceiveEvent();
                             lastMessagesIds[messageType] = messageId;
+                            ReceiveEvent();
                         }
                         else
                         {
@@ -139,11 +139,6 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
                         lastMessagesIds.Add(messageType, messageId);
                         ReceiveEvent();
                     }
-
-                    if (messageType == MESSAGE_TYPE.VECTOR2)
-                    {
-                        clients[ipToId[(ip, timeStamp)]].position = new Vector2Message().Deserialize(data);
-                    }
                 }
                 break;
             default:
@@ -154,6 +149,11 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         {
             if (ipToId.ContainsKey((ip, timeStamp)))
             {
+                if (messageType == MESSAGE_TYPE.VECTOR2)
+                {
+                    clients[ipToId[(ip, timeStamp)]].position = new Vector2Message().Deserialize(data);
+                }
+
                 OnReceiveEvent?.Invoke(data, ip, ipToId[(ip, timeStamp)]);
             }
         }
