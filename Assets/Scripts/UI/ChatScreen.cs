@@ -8,10 +8,15 @@ public class ChatScreen : MonoBehaviour
     #region EXPOSED_FIELDS
     [SerializeField] private Text messages = null;
     [SerializeField] private InputField inputMessage = null;
+    [SerializeField] private int maxMessageIndex = 19;
     #endregion
 
     #region ACTIONS
     public Action<string> onSendChat;
+    #endregion
+
+    #region PRIVATE_FIELDS
+    private int messsageIndex = 0;
     #endregion
 
     #region UNITY_CALLS
@@ -41,11 +46,23 @@ public class ChatScreen : MonoBehaviour
             return;
         }
 
+        SetMessageIndex();
+
         messages.text += str + "\n";
     }
     #endregion
 
     #region PRIVATE_METHODS
+    private void SetMessageIndex()
+    {
+        if (messsageIndex > maxMessageIndex)
+        {
+            messages.text = string.Empty;
+            messsageIndex = 0;
+        }
+
+        messsageIndex++;
+    }
     private void DisableInputIfServer(bool isServer)
     {
         inputMessage.gameObject.SetActive(!isServer);

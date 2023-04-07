@@ -119,33 +119,31 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
             case MESSAGE_TYPE.VECTOR2:
                 if (ipToId.ContainsKey((ip, timeStamp)))
                 {
-                    //int messageId = messageFormater.GetMessageId(data);
-                    //Dictionary<MESSAGE_TYPE, int> lastMessagesIds = clients[ipToId[ip]].lastMessagesIds;
-                    //
-                    //if (lastMessagesIds.ContainsKey(messageType))
-                    //{
-                    //    if (lastMessagesIds[messageType] <= messageId)
-                    //    {
-                    //        ReceiveEvent();
-                    //        lastMessagesIds[messageType] = messageId;
-                    //    }
-                    //    else
-                    //    {
-                    //        // Ignore message, it's old
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    lastMessagesIds.Add(messageType, messageId);
-                    //    ReceiveEvent();
-                    //}}
+                    int messageId = messageFormater.GetMessageId(data);
+                    Dictionary<MESSAGE_TYPE, int> lastMessagesIds = clients[ipToId[(ip, timeStamp)]].lastMessagesIds;
+                    
+                    if (lastMessagesIds.ContainsKey(messageType))
+                    {
+                        if (lastMessagesIds[messageType] <= messageId)
+                        {
+                            ReceiveEvent();
+                            lastMessagesIds[messageType] = messageId;
+                        }
+                        else
+                        {
+                            // Ignore message, it's old
+                        }
+                    }
+                    else
+                    {
+                        lastMessagesIds.Add(messageType, messageId);
+                        ReceiveEvent();
+                    }
 
                     if (messageType == MESSAGE_TYPE.VECTOR2)
                     {
                         clients[ipToId[(ip, timeStamp)]].position = new Vector2Message().Deserialize(data);
                     }
-
-                    ReceiveEvent();//++
                 }
                 break;
             default:
