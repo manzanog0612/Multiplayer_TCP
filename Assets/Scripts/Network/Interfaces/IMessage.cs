@@ -7,7 +7,8 @@ public enum MESSAGE_TYPE
     HAND_SHAKE = -2,
     CLIENTS_LIST = -1,
     STRING = 0,
-    VECTOR2
+    VECTOR2,
+    VECTOR3
 }
 
 public interface IMessage<T>

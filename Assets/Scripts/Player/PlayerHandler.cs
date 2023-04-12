@@ -11,7 +11,7 @@ public class PlayerHandler : MonoBehaviour
     private bool initialized = false;
     private PlayerData playerData = new PlayerData();
 
-    private Vector2 movement = Vector2.zero;
+    private Vector3 movement = Vector3.zero;
     #endregion
 
     #region ACTIONS
@@ -52,7 +52,7 @@ public class PlayerHandler : MonoBehaviour
     #region PRIVATE_METHODS
     private void DetectInput()
     {
-        movement = Vector2.zero;
+        movement = Vector3.zero;
 
         if (Input.GetKey(KeyCode.LeftArrow))
         {
@@ -71,11 +71,20 @@ public class PlayerHandler : MonoBehaviour
         {
             movement.y = -speed * Time.deltaTime;
         }
+
+        if (Input.GetKey(KeyCode.Q))
+        {
+            movement.z = speed * Time.deltaTime;
+        }
+        else if (Input.GetKey(KeyCode.E))
+        {
+            movement.z = -speed * Time.deltaTime;
+        }
     }
 
     private void Processinput()
     {
-        if (movement != Vector2.zero)
+        if (movement != Vector3.zero)
         {
             playerData.movement = movement;
             playerData.position += movement;
@@ -85,7 +94,7 @@ public class PlayerHandler : MonoBehaviour
 
     private void ResetData()
     {
-        movement = Vector2.zero;
+        movement = Vector3.zero;
         playerData.movement = null;
         playerData.message = null;
     }

@@ -12,14 +12,14 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     [SerializeField] private PlayerHandler player = null;
 
     [Header("Game Configurations")]
-    [SerializeField] private MovableSquare squarePrefab = null;
-    [SerializeField] private Transform squaresHolder = null;
+    [SerializeField] private MovableCube cubePrefab = null;
+    [SerializeField] private Transform cubesHolder = null;
     #endregion
 
     #region PRIVATE_FIELDS
     private bool isServer = false;
 
-    private Dictionary<int,MovableSquare> playersSquares = new Dictionary<int, MovableSquare>();
+    private Dictionary<int, MovableCube> playersSquares = new Dictionary<int, MovableCube>();
     #endregion
 
     #region UNITY_CALLS
@@ -52,14 +52,14 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     #endregion
 
     #region PRIVATE_METHODS
-    private void OnAddNewClient(int clientID, Vector2 position, Color color)
+    private void OnAddNewClient(int clientID, Vector3 position, Color color)
     {
-        MovableSquare square = Instantiate(squarePrefab, squaresHolder);
+        MovableCube cube = Instantiate(cubePrefab, cubesHolder);
 
-        square.SetPosition(position);
-        square.SetColor(color);
+        cube.SetPosition(position);
+        cube.SetColor(color);
 
-        playersSquares.Add(clientID, square);
+        playersSquares.Add(clientID, cube);
     }
 
     private void OnStartConnection(bool isPlayerServer)
@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 
         if (!playerData.IdIsVoid() && playerData.movement != null)
         {
-            playersSquares[playerData.id].SetPosition((Vector2)playerData.position);
+            playersSquares[playerData.id].SetPosition(playerData.position);
         }
     }
 

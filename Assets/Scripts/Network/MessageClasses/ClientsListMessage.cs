@@ -3,29 +3,29 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ClientsListMessage : IMessage<(long, float, Vector2, Color)[]>
+public class ClientsListMessage : IMessage<(long, float, Vector3, Color)[]>
 {
     #region PRIVATE_FIELDS
-    private (long, float, Vector2, Color)[] data;
+    private (long, float, Vector3, Color)[] data;
     #endregion
 
     #region CONSTRUCTORS
     public ClientsListMessage() { }
 
-    public ClientsListMessage((long, float, Vector2, Color)[] data)
+    public ClientsListMessage((long, float, Vector3, Color)[] data)
     {
         this.data = data;
     }
     #endregion
 
     #region PUBLIC_METHODS
-    public (long, float, Vector2, Color)[] Deserialize(byte[] message)
+    public (long, float, Vector3, Color)[] Deserialize(byte[] message)
     {
-        List<(long, float, Vector2, Color)> outData = new List<(long, float, Vector2, Color)>();
+        List<(long, float, Vector3, Color)> outData = new List<(long, float, Vector3, Color)>();
 
         short item1Size = 8;// long 8
         short item2Size = 4;// float 4
-        short item3Size = 8; // float 4 * 2 (vector2)
+        short item3Size = 12; // float 4 * 3 (vector3)
         short item4Size = 16;
         short totalItemSize = (short)(item1Size + item2Size + item3Size + item4Size);
         short messageStartIndex = 4;
@@ -57,10 +57,11 @@ public class ClientsListMessage : IMessage<(long, float, Vector2, Color)[]>
                 clientBytes.Add(message[messageStartIndex + item1Size + item2Size + (i * totalItemSize) + j]);
             }
 
-            Vector2 item3;
+            Vector3 item3;
 
             item3.x = BitConverter.ToSingle(clientBytes.ToArray(), 0);
             item3.y = BitConverter.ToSingle(clientBytes.ToArray(), 4);
+            item3.z = BitConverter.ToSingle(clientBytes.ToArray(), 8);
 
             clientBytes.Clear();
 
@@ -99,6 +100,7 @@ public class ClientsListMessage : IMessage<(long, float, Vector2, Color)[]>
             outData.AddRange(BitConverter.GetBytes(data[i].Item2));
             outData.AddRange(BitConverter.GetBytes(data[i].Item3.x));
             outData.AddRange(BitConverter.GetBytes(data[i].Item3.y));
+            outData.AddRange(BitConverter.GetBytes(data[i].Item3.z));
             outData.AddRange(BitConverter.GetBytes(data[i].Item4.r));
             outData.AddRange(BitConverter.GetBytes(data[i].Item4.g));
             outData.AddRange(BitConverter.GetBytes(data[i].Item4.b));

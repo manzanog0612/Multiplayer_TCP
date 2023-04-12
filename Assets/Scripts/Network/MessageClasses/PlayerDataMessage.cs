@@ -36,10 +36,10 @@ public class PlayerDataMessage : IMessage<PlayerData>
                 string chat = stringMessage.Deserialize(data);
                 outData.message = chat;
                 break;
-            case MESSAGE_TYPE.VECTOR2:
-                Vector2Message vector2Message = new Vector2Message();
+            case MESSAGE_TYPE.VECTOR3:
+                Vector3Message vector3Message = new Vector3Message();
                 outData.movement = outData.position; // a check to know if the player moved
-                outData.position = vector2Message.Deserialize(data);
+                outData.position = vector3Message.Deserialize(data);
                 break;
             default:
                 break;
@@ -65,7 +65,7 @@ public class PlayerDataMessage : IMessage<PlayerData>
 
         if (data.movement != null)
         {
-            Vector2Message vector2Message = new Vector2Message(data.position);
+            Vector3Message vector2Message = new Vector3Message(data.position);
             outData.AddRange(vector2Message.Serialize(admissionTime));
         }
 

@@ -12,10 +12,10 @@ public class Client
     public int id;
     public IPEndPoint ipEndPoint;
     public Dictionary<MESSAGE_TYPE, int> lastMessagesIds;
-    public Vector2 position = Vector2.zero;
+    public Vector3 position = Vector3.zero;
     public Color color = Color.white;
 
-    public Client(IPEndPoint ipEndPoint, int id, float timeStamp, Dictionary<MESSAGE_TYPE, int> lastMessagesIds, Vector2 position, Color color)
+    public Client(IPEndPoint ipEndPoint, int id, float timeStamp, Dictionary<MESSAGE_TYPE, int> lastMessagesIds, Vector3 position, Color color)
     {
         this.timeStamp = timeStamp;
         this.id = id;
@@ -61,7 +61,7 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
 #region ACTIONS
 public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
     public Action<bool> onStartConnection = null;
-    public Action<int, Vector2, Color> onAddNewClient = null;
+    public Action<int, Vector3, Color> onAddNewClient = null;
     #endregion
 
     #region UNITY_CALLS
@@ -86,7 +86,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         {
             case MESSAGE_TYPE.HAND_SHAKE:
                 (long, int, Color) message = new HandShakeMessage().Deserialize(data);
-                AddClient(ip, timeStamp, Vector2.zero, message.Item3);
+                AddClient(ip, timeStamp, Vector3.zero, message.Item3);
                 ReceiveEvent();
 
                 if (isServer)
@@ -104,7 +104,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
             case MESSAGE_TYPE.CLIENTS_LIST:
                 if (waitingHandShakeBack)
                 {
-                    (long, float, Vector2, Color)[] clientsList = new ClientsListMessage().Deserialize(data);
+                    (long, float, Vector3, Color)[] clientsList = new ClientsListMessage().Deserialize(data);
 
                     for (int i = 0; i < clientsList.Length; i++)
                     {
@@ -116,7 +116,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
                 }
                 break;
             case MESSAGE_TYPE.STRING:
-            case MESSAGE_TYPE.VECTOR2:
+            case MESSAGE_TYPE.VECTOR3:
                 if (ipToId.ContainsKey((ip, timeStamp)))
                 {
                     int messageId = messageFormater.GetMessageId(data);
@@ -149,9 +149,9 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         {
             if (ipToId.ContainsKey((ip, timeStamp)))
             {
-                if (messageType == MESSAGE_TYPE.VECTOR2)
+                if (messageType == MESSAGE_TYPE.VECTOR3)
                 {
-                    clients[ipToId[(ip, timeStamp)]].position = new Vector2Message().Deserialize(data);
+                    clients[ipToId[(ip, timeStamp)]].position = new Vector3Message().Deserialize(data);
                 }
 
                 OnReceiveEvent?.Invoke(data, ip, ipToId[(ip, timeStamp)]);
@@ -288,9 +288,9 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         }
     }
 
-    private (long, float, Vector2, Color)[] GetClientsList()
+    private (long, float, Vector3, Color)[] GetClientsList()
     {
-        List<(long, float, Vector2, Color)> clients = new List<(long, float, Vector2, Color)>();
+        List<(long, float, Vector3, Color)> clients = new List<(long, float, Vector3, Color)>();
 
         foreach (var client in this.clients)
         {
@@ -300,7 +300,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         return clients.ToArray();
     }
 
-    private void AddClient(IPEndPoint ip, float realtimeSinceStartup, Vector2 position, Color color)
+    private void AddClient(IPEndPoint ip, float realtimeSinceStartup, Vector3 position, Color color)
     {
         if (!ipToId.ContainsKey((ip, realtimeSinceStartup)))
         {
