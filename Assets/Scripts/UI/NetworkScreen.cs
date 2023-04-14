@@ -31,8 +31,8 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     #region PRIVATE_METHODS
     private void OnConnectBtnClick()
     {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");// IPAddress.Parse(addressInputField.text);
-        int port = 8053;// int.Parse(portInputField.text);
+        IPAddress ipAddress = IPAddress.Parse(addressInputField.text);
+        int port = int.Parse(portInputField.text);
 
         if (tcpConnection)
         {
