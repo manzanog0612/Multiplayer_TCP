@@ -9,7 +9,7 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     [SerializeField] ChatScreen chatScreen = null;
 
     [SerializeField] Button connectBtn = null;
-    [SerializeField] Button startServerBtn = null;
+    //[SerializeField] Button startServerBtn = null;
     [SerializeField] InputField portInputField = null;
     [SerializeField] InputField addressInputField = null;
     #endregion
@@ -22,7 +22,7 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     protected override void Initialize()
     {
         connectBtn.onClick.AddListener(OnConnectBtnClick);
-        startServerBtn.onClick.AddListener(OnStartServerBtnClick);
+        //startServerBtn.onClick.AddListener(OnStartServerBtnClick);
 
         tcpConnection = NetworkManager.Instance.TcpConnection;
     }
@@ -31,8 +31,8 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     #region PRIVATE_METHODS
     private void OnConnectBtnClick()
     {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
-        int port = 8053;//portInputField.text);
+        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");// IPAddress.Parse(addressInputField.text);
+        int port = 8053;// int.Parse(portInputField.text);
 
         if (tcpConnection)
         {
@@ -49,19 +49,17 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
 
     private void OnStartServerBtnClick()
     {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//addressInputField.text);
-        int port = 8053;//portInputField.text);)
+        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+        int port = 8053;
 
         if (tcpConnection)
         {
-            NetworkManager.Instance.StartTcpServer(ipAddress, port);//addressInputField.text, port);
+            NetworkManager.Instance.StartTcpServer(ipAddress, port);
         }
         else
         {
             NetworkManager.Instance.StartUdpServer(port);
         }
-
-        SwitchToChatScreen();
     }
 
     private void SwitchToChatScreen()

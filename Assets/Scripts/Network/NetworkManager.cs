@@ -54,17 +54,32 @@ public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IReceiveDa
     public int port { get; private set; }
     public bool isServer { get; private set; }
     public bool TcpConnection { get; }
-
     public float admissionTimeStamp { get; private set; }
-#endregion
+    #endregion
 
-#region ACTIONS
-public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
+    #region ACTIONS
+    public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
     public Action<bool> onStartConnection = null;
     public Action<int, Vector3, Color> onAddNewClient = null;
     #endregion
 
     #region UNITY_CALLS
+#if UNITY_SERVER
+    private void Start()
+    {
+        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+        int port = 8053;
+
+        if (tcpConnection)
+        {
+            StartTcpServer(ipAddress, port);
+        }
+        else
+        {
+            StartUdpServer(port);
+        }
+    }
+#endif
     private void Update()
     {
         // Flush the data in main thread
@@ -167,7 +182,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
         this.port = port;
         udpConnection = new UdpConnection(port, this);
 
-        onStartConnection.Invoke(isServer);
+        onStartConnection?.Invoke(isServer);
 
         Debug.Log("Server created");
     }
@@ -304,7 +319,7 @@ public Action<byte[], IPEndPoint, int> OnReceiveEvent = null;
     {
         if (!ipToId.ContainsKey((ip, realtimeSinceStartup)))
         {
-            logger.SendLog("Adding client: " + ip.Address);
+            logger?.SendLog("Adding client: " + ip.Address);
 
             int id = clientId;
             ipToId[(ip, realtimeSinceStartup)] = clientId;

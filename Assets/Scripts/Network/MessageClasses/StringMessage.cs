@@ -36,7 +36,7 @@ public class StringMessage : OrdenableMessage, IMessage<string>
             outData += BitConverter.ToChar(charBytes.ToArray());
         }
 
-        return outData + " " + new MessageFormater().GetMessageId(message);
+        return outData; //+ " " + new MessageFormater().GetMessageId(message);
     }
 
     public MESSAGE_TYPE GetMessageType()

@@ -48,6 +48,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         chatScreen.onSendChat = OnSendChat;
 
         player.Init(DataHandler.Instance.SendPlayerData);
+        player.gameObject.SetActive(false);
     }
     #endregion
 
@@ -66,9 +67,9 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     {
         isServer = isPlayerServer;
 
-        if (isServer)
+        if (!isServer)
         {
-            player.gameObject.SetActive(false);
+            player.gameObject.SetActive(true);
         }
     }
 

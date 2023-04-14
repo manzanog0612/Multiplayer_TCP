@@ -50,7 +50,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
 
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(clientId);
 
-        onReceiveData.Invoke(playerDataMessage.Deserialize(data));
+        onReceiveData?.Invoke(playerDataMessage.Deserialize(data));
     }
 
     public void SendPlayerData(PlayerData playerData)
