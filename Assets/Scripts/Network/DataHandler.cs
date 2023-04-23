@@ -17,7 +17,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     {
         if (NetworkManager.Instance != null)
         {
-            NetworkManager.Instance.OnReceiveEvent -= OnReceiveDataEvent;
+            NetworkManager.Instance.onReceiveEvent -= OnReceiveDataEvent;
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
         }
     }
@@ -26,7 +26,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     #region INITIALIZATION
     protected override void Initialize()
     {
-        NetworkManager.Instance.OnReceiveEvent += OnReceiveDataEvent;
+        NetworkManager.Instance.onReceiveEvent += OnReceiveDataEvent;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
 
         tcpConnection = NetworkManager.Instance.TcpConnection;
@@ -57,6 +57,13 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     {
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
         byte[] message = playerDataMessage.Serialize(NetworkManager.Instance.admissionTimeStamp);
+        SendData(message);
+    }
+
+    public void SendStringMessage(string chat)
+    {
+        StringMessage stringMessage = new StringMessage(chat);
+        byte[] message = stringMessage.Serialize(NetworkManager.Instance.admissionTimeStamp);
         SendData(message);
     }
 

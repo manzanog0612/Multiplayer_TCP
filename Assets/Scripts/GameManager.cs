@@ -29,6 +29,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         { 
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
+            NetworkManager.Instance.onRemoveClient -= OnRemoveClient;
         }
 
         if (DataHandler.Instance != null)
@@ -44,6 +45,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         DataHandler.Instance.onReceiveData += OnReceivePlayerData;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
+        NetworkManager.Instance.onRemoveClient += OnRemoveClient;
 
         chatScreen.onSendChat = OnSendChat;
 
@@ -53,7 +55,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     #endregion
 
     #region PRIVATE_METHODS
-    private void OnAddNewClient(int clientID, Vector3 position, Color color)
+    private void OnAddNewClient(int clientID, (long, float) connectionData, Vector3 position, Color color)
     {
         MovableCube cube = Instantiate(cubePrefab, cubesHolder);
 
@@ -90,6 +92,15 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         if (isServer)
         {
             chatScreen.AddText(chat);
+        }
+    }
+
+    private void OnRemoveClient(int id)
+    {
+        if (playersSquares.ContainsKey(id))
+        { 
+            Destroy(playersSquares[id].gameObject);
+            playersSquares.Remove(id);
         }
     }
     #endregion

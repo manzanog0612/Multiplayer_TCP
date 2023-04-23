@@ -47,6 +47,12 @@ public class PlayerHandler : MonoBehaviour
         playerData.message = message;
         onChangePlayerData.Invoke(playerData);
     }
+
+    public void SendSyncMessage()
+    {
+        playerData.movement = Vector3.zero;
+        onChangePlayerData.Invoke(playerData);
+    }
     #endregion
 
     #region PRIVATE_METHODS
