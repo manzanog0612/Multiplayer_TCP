@@ -26,7 +26,7 @@ public class ServerNetworkManager : NetworkManager
     public void Start()
     {
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-        port = 8053;
+        //port = 8053;
         if (IsTcpConnection)
         {
             StartTcpServer(ipAddress, port);
@@ -139,7 +139,8 @@ public class ServerNetworkManager : NetworkManager
     #region DATA_RECEIVE_PROCESS
     protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
     {
-        //ConnectRequestMessage 
+        (long, int) clientData = new ConnectRequestMessage().Deserialize(data);
+
     }
 
     protected override void ProcessRemoveClient(byte[] data)

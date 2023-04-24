@@ -63,8 +63,8 @@ public class ClientNetworkManager : NetworkManager
 
         udpConnection = new UdpConnection(ip, port, this);
 
-        SendHandShake();
-        //SendConnectRequest();
+        //SendHandShake();
+        SendConnectRequest();
 
         onStartConnection.Invoke(isServer);
 
@@ -89,7 +89,8 @@ public class ClientNetworkManager : NetworkManager
 
         tcpClientConnection = new TcpClientConnection(ip, port, this);
 
-        SendHandShake();
+        //SendHandShake();
+        SendConnectRequest();
 
         onStartConnection.Invoke(isServer);
     }

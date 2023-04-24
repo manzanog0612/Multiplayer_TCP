@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -84,9 +86,16 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         if (availableServer == null)
         {
             availableServer = RunNewServer();
-        }
 
-        SendConnectRequestToServer(availableServer, data);
+            WaitForServerToOpen(() =>
+            {
+                SendConnectRequestToServer(availableServer, data);
+            });
+        }
+        else
+        {
+            SendConnectRequestToServer(availableServer, data);
+        }        
     }
 
     private void SendConnectRequestToServer(ServerData availableServer, byte[] data)
@@ -169,5 +178,14 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         return port;
     }
+    #endregion
+
+    #region AUX
+    private IEnumerator WaitForServerToOpen(Action callback)
+    {
+        yield return new WaitForSeconds(2);
+        callback?.Invoke();
+    }
+
     #endregion
 }
