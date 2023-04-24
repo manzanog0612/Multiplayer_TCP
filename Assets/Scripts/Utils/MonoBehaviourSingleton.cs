@@ -22,13 +22,8 @@ public class MonoBehaviourSingleton<T> : MonoBehaviour where T : MonoBehaviourSi
 
     }
 
-    private void Awake()
+    private void Start()
     {
-        //if (instance != null)
-        //    Destroy(this.gameObject);
-        //
-        //instance = this;
-
         Initialize();
     }
 }

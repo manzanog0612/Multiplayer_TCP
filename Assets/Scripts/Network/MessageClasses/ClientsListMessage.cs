@@ -34,7 +34,7 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         
         int id = BitConverter.ToInt32(bytes.ToArray());
 
-        short item1Size = 4;
+        short item1Size = 4;// int 4
         short item2Size = 8;// long 8
         short item3Size = 4;// float 4
         short item4Size = 12; // float 4 * 3 (vector3)

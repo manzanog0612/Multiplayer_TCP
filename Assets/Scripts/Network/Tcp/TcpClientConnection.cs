@@ -18,9 +18,7 @@ public class TcpClientConnection
 
     private ConnectionData connectionData;
 
-    private Logger logger;
-
-    public TcpClientConnection(IPAddress ip, int port, IReceiveData receiver = null, Logger logger = null)
+    public TcpClientConnection(IPAddress ip, int port, IReceiveData receiver = null)
     {
         try
         {
@@ -31,8 +29,7 @@ public class TcpClientConnection
             receiveThread.Start();
 
             this.receiver = receiver;
-            this.logger = logger;
-            logger.SendLog("TCP CLIENT MADE");
+            Debug.Log("TCP CLIENT MADE");
         }
         catch (Exception e)
         {
@@ -69,8 +66,8 @@ public class TcpClientConnection
                         var incommingData = new byte[length];
                         Array.Copy(bytes, 0, incommingData, 0, length);		
                         string serverMessage = ASCIIEncoding.UTF8.GetString(incommingData);
-                        //logger.SendLog("server message received as: " + serverMessage);
-                        logger.SendLog("server: " + serverMessage);
+
+                        Debug.Log("server: " + serverMessage);
 
                         DataReceived dataReceived = new DataReceived((Byte[])bytes.Clone(), new IPEndPoint(connectionData.server, connectionData.port));
 
@@ -89,7 +86,7 @@ public class TcpClientConnection
         }
         catch (SocketException socketException)
         {
-            logger.SendLog("Socket exception: " + socketException);
+            Debug.Log("Socket exception: " + socketException);
         }
     }
 
@@ -105,12 +102,11 @@ public class TcpClientConnection
             if (stream.CanWrite)
             {            
                 stream.Write(data, 0, data.Length);
-                //logger.SendLog("Client sent his message - should be received by server");
             }
         }
         catch (SocketException socketException)
         {
-            logger.SendLog("Socket exception: " + socketException);
+            Debug.Log("Socket exception: " + socketException);
         }
     }
 }

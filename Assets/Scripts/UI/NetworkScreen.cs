@@ -7,24 +7,17 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
 {
     #region EXPOSED_FIELDS
     [SerializeField] ChatScreen chatScreen = null;
+    [SerializeField] ClientHandler clientHandler = null;
 
     [SerializeField] Button connectBtn = null;
-    //[SerializeField] Button startServerBtn = null;
     [SerializeField] InputField portInputField = null;
     [SerializeField] InputField addressInputField = null;
-    #endregion
-
-    #region PRIVATE_FIELDS
-    private bool tcpConnection = true;
     #endregion
 
     #region INITIALIZATION
     protected override void Initialize()
     {
         connectBtn.onClick.AddListener(OnConnectBtnClick);
-        //startServerBtn.onClick.AddListener(OnStartServerBtnClick);
-
-        tcpConnection = NetworkManager.Instance.TcpConnection;
     }
     #endregion
 
@@ -34,32 +27,9 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
         IPAddress ipAddress = IPAddress.Parse("127.0.0.1");// IPAddress.Parse(addressInputField.text);
         int port = 8053;// int.Parse(portInputField.text);
 
-        if (tcpConnection)
-        {
-            NetworkManager.Instance.StartTcpClient(ipAddress, port);
-        }
-        else
-        {
-            NetworkManager.Instance.StartUdpClient(ipAddress, port);
-        }
-
+        clientHandler.StartClient(ipAddress, port);
 
         SwitchToChatScreen();
-    }
-
-    private void OnStartServerBtnClick()
-    {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-        int port = 8053;
-
-        if (tcpConnection)
-        {
-            NetworkManager.Instance.StartTcpServer(ipAddress, port);
-        }
-        else
-        {
-            NetworkManager.Instance.StartUdpServer(port);
-        }
     }
 
     private void SwitchToChatScreen()

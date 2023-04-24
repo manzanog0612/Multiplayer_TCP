@@ -18,6 +18,8 @@ public class SyncHandler : MonoBehaviour
 {
     #region EXPOSED_FIELDS
     [SerializeField] private PlayerHandler playerHandler = null;
+    [SerializeField] private ServerHandler serverHandler = null;
+    [SerializeField] private ClientHandler clientHandler = null;
     #endregion
 
     #region PRIVATE_FIELDS
@@ -53,7 +55,7 @@ public class SyncHandler : MonoBehaviour
 
     private void Start()
     {
-        tcpConnection = NetworkManager.Instance.TcpConnection;
+        tcpConnection = NetworkManager.Instance.IsTcpConnection;
 
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onReceiveServerSyncMessage += ClearTimer;
@@ -79,11 +81,11 @@ public class SyncHandler : MonoBehaviour
         {
             if (isServer)
             {
-                NetworkManager.Instance.KickPlayer(id, false);
+                serverHandler.KickClient(id, false);
             }
             else
             {
-                NetworkManager.Instance.DisconectUpdClient();
+                clientHandler.DisconectClient();
             }
         }
     }

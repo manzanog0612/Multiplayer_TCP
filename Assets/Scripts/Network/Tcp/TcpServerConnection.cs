@@ -4,7 +4,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
+using UnityEngine;
+
 using ASCIIEncoding = System.Text.ASCIIEncoding;
+
 public class TcpServerConnection
 {
     private TcpListener listener;
@@ -17,9 +20,7 @@ public class TcpServerConnection
 
     private ConnectionData connectionData;
 
-    private Logger logger;
-
-    public TcpServerConnection(IPAddress ip, int port, IReceiveData receiver = null, Logger logger = null)
+    public TcpServerConnection(IPAddress ip, int port, IReceiveData receiver = null)
     {
         connectionData = new ConnectionData(ip, port);
 
@@ -29,8 +30,7 @@ public class TcpServerConnection
 
         this.receiver = receiver;
 
-        this.logger = logger;
-        logger.SendLog("TCP SERVER MADE");
+        Debug.Log("TCP SERVER MADE");
     }
 
     public void FlushReceiveData()
@@ -52,7 +52,7 @@ public class TcpServerConnection
         {
             listener = new TcpListener(connectionData.server, connectionData.port);
             listener.Start();
-            logger.SendLog("Server is listening");
+            Debug.Log("Server is listening");
             
             while (true)
             {
@@ -69,8 +69,8 @@ public class TcpServerConnection
                             var incommingData = new byte[length];
                             Array.Copy(bytes, 0, incommingData, 0, length);			
                             string clientMessage = ASCIIEncoding.UTF8.GetString(incommingData);
-                            //logger.SendLog("client message received as: " + clientMessage);
-                            logger.SendLog("client: " + clientMessage);
+                            //Debug.Log("client message received as: " + clientMessage);
+                            Debug.Log("client: " + clientMessage);
 
                             DataReceived dataReceived = new DataReceived((Byte[])bytes.Clone(), new IPEndPoint(connectionData.server, connectionData.port)); ;
 
@@ -90,7 +90,7 @@ public class TcpServerConnection
         }
         catch (SocketException socketException)
         {
-            logger.SendLog("SocketException " + socketException.ToString());
+            Debug.Log("SocketException " + socketException.ToString());
         }
     }
 
@@ -106,12 +106,12 @@ public class TcpServerConnection
             if (stream.CanWrite)
             {
                 stream.Write(data, 0, data.Length);
-                //logger.SendLog("Server sent his message - should be received by client");
+                //Debug.Log("Server sent his message - should be received by client");
             }
         }
         catch (SocketException socketException)
         {
-            logger.SendLog("Socket exception: " + socketException);
+            Debug.Log("Socket exception: " + socketException);
         }
     }
 }

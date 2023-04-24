@@ -26,9 +26,7 @@ public class PlayerDataMessage : IMessage<PlayerData>
     {
         PlayerData outData = this.data;
 
-        MessageFormater messageFormater = new MessageFormater();
-
-        switch (messageFormater.GetMessageType(data))
+        switch (MessageFormater.GetMessageType(data))
         {
             case MESSAGE_TYPE.STRING:
                 StringMessage stringMessage = new StringMessage();

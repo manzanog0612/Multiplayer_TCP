@@ -4,6 +4,7 @@ using UnityEngine;
 
 public enum MESSAGE_TYPE
 {
+    CONNECT_REQUEST = -4,
     CLIENT_DISCONECT = -3,
     HAND_SHAKE = -2,
     CLIENTS_LIST = -1,

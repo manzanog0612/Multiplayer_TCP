@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-public class MessageFormater
+public static class MessageFormater
 {
     #region PUBLIC_METHODS
-    public MESSAGE_TYPE GetMessageType(byte[] data)
+    public static MESSAGE_TYPE GetMessageType(byte[] data)
     {
         List<byte> messageTypeBytes = new List<byte>();
 
@@ -18,7 +18,7 @@ public class MessageFormater
         return messageType;
     }
 
-    public int GetMessageId(byte[] data)
+    public static int GetMessageId(byte[] data)
     {
         List<byte> messageTypeBytes = new List<byte>();
 
@@ -32,7 +32,7 @@ public class MessageFormater
         return messageId;
     }
 
-    public float GetAdmissionTime(byte[] data)
+    public static float GetAdmissionTime(byte[] data)
     {
         List<byte> messageTypeBytes = new List<byte>();
 

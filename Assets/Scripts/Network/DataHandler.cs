@@ -29,25 +29,13 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
         NetworkManager.Instance.onReceiveEvent += OnReceiveDataEvent;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
 
-        tcpConnection = NetworkManager.Instance.TcpConnection;
+        tcpConnection = NetworkManager.Instance.IsTcpConnection;
     }
     #endregion
 
     #region PUBLIC_METHODS
     public void OnReceiveDataEvent(byte[] data, IPEndPoint ip, int clientId)
     {
-        if (isServer)
-        {
-            if (tcpConnection)
-            {
-                NetworkManager.Instance.TcpBroadcast(data);
-            }
-            else
-            {
-                NetworkManager.Instance.UdpBroadcast(data);
-            }
-        }
-
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(clientId);
 
         onReceiveData?.Invoke(playerDataMessage.Deserialize(data));
@@ -56,14 +44,14 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     public void SendPlayerData(PlayerData playerData)
     {
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
-        byte[] message = playerDataMessage.Serialize(NetworkManager.Instance.admissionTimeStamp);
+        byte[] message = playerDataMessage.Serialize((NetworkManager.Instance as ClientNetworkManager).admissionTimeStamp);
         SendData(message);
     }
 
     public void SendStringMessage(string chat)
     {
         StringMessage stringMessage = new StringMessage(chat);
-        byte[] message = stringMessage.Serialize(NetworkManager.Instance.admissionTimeStamp);
+        byte[] message = stringMessage.Serialize(-1);
         SendData(message);
     }
 
@@ -73,22 +61,22 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
         {
             if (tcpConnection)
             {
-                NetworkManager.Instance.TcpBroadcast(message);
+                (NetworkManager.Instance as ServerNetworkManager).TcpBroadcast(message);
             }
             else
             {
-                NetworkManager.Instance.UdpBroadcast(message);
+                (NetworkManager.Instance as ServerNetworkManager).UdpBroadcast(message);
             }
         }
         else
         {
             if (tcpConnection)
             {
-                NetworkManager.Instance.SendToTcpServer(message);
+                (NetworkManager.Instance as ClientNetworkManager).SendToTcpServer(message);
             }
             else
             {
-                NetworkManager.Instance.SendToUdpServer(message);
+                (NetworkManager.Instance as ClientNetworkManager).SendToUdpServer(message);
             }
         }
     }
