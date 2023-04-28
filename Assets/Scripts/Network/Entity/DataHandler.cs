@@ -18,7 +18,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
         if (NetworkManager.Instance != null)
         {
             NetworkManager.Instance.onReceiveEvent -= OnReceiveDataEvent;
-            NetworkManager.Instance.onStartConnection -= OnStartConnection;
+            NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
         }
     }
     #endregion
@@ -27,7 +27,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     protected override void Initialize()
     {
         NetworkManager.Instance.onReceiveEvent += OnReceiveDataEvent;
-        NetworkManager.Instance.onStartConnection += OnStartConnection;
+        NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
 
         tcpConnection = NetworkManager.Instance.IsTcpConnection;
     }
@@ -83,7 +83,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     #endregion
 
     #region PRIVATE_METHODS
-    private void OnStartConnection(bool isPlayerServer)
+    private void OnDefineIsServer(bool isPlayerServer)
     {
         isServer = isPlayerServer;
     }

@@ -46,6 +46,7 @@ public class SyncHandler : MonoBehaviour
     {
         if (NetworkManager.Instance != null)
         {
+            NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
             NetworkManager.Instance.onReceiveServerSyncMessage -= ClearTimer;
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
@@ -57,6 +58,7 @@ public class SyncHandler : MonoBehaviour
     {
         tcpConnection = NetworkManager.Instance.IsTcpConnection;
 
+        NetworkManager.Instance.onDefineIsServer += OnDefineIsServer;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onReceiveServerSyncMessage += ClearTimer;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
@@ -92,10 +94,14 @@ public class SyncHandler : MonoBehaviour
     #endregion
 
     #region PRIVATE_METHODS
-    private void OnStartConnection(bool isPlayerServer)
+    private void OnDefineIsServer(bool isPlayerServer)
     {
         isServer = isPlayerServer;
+    }
 
+
+    private void OnStartConnection()
+    {
         if (isServer)
         {
             clientTimes = new List<ConnectionTime>();

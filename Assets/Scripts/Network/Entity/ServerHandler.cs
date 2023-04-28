@@ -1,5 +1,4 @@
-using System.Net;
-
+using System;
 using UnityEngine;
 
 public class ServerHandler : MonoBehaviour
@@ -10,29 +9,18 @@ public class ServerHandler : MonoBehaviour
     {
         serverNetworkManager = new ServerNetworkManager();
 
-        NetworkManager.Instance = serverNetworkManager;        
+        NetworkManager.Instance = serverNetworkManager;
     }
 
     private void Start()
     {
+        NetworkManager.port = int.Parse(Environment.GetCommandLineArgs()[1]);
         serverNetworkManager.Start();
     }
 
     private void Update()
     {
         serverNetworkManager.Update();
-    }
-
-    public void StartServer(IPAddress ip, int port)
-    {
-        if (serverNetworkManager.IsTcpConnection)
-        {
-            serverNetworkManager.StartTcpServer(ip, port);
-        }
-        else
-        {
-            serverNetworkManager.StartUdpServer(port);
-        }
     }
 
     public void KickClient(int id, bool closeApp = true)

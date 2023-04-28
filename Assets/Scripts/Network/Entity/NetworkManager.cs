@@ -20,7 +20,7 @@ public class NetworkManager : IReceiveData
 
     #region PROPERTIES
     public IPAddress ipAddress { get; protected set; }
-    public static int port { get; protected set; }
+    public static int port { get; set; }
     public bool isServer { get; protected set; }
     public bool IsTcpConnection => isTcpConnection;
     #endregion
@@ -28,7 +28,8 @@ public class NetworkManager : IReceiveData
     #region ACTIONS
     public Action<byte[], IPEndPoint, int> onReceiveEvent = null;
     public Action<int> onReceiveServerSyncMessage = null;
-    public Action<bool> onStartConnection = null;
+    public Action onStartConnection = null;
+    public Action<bool> onDefineIsServer = null;
     public Action<int, (long, float), Vector3, Color> onAddNewClient = null;
     public Action onSendData = null;
     public Action<int> onRemoveClient = null;

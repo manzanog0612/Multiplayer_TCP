@@ -1,7 +1,46 @@
 using System.Collections.Generic;
 using System.Net;
-
 using UnityEngine;
+
+public class SendDataOnceNetwork
+{
+    UdpConnection udpConnection = null;
+    Client client = null;
+    bool asClient = false;
+
+    public SendDataOnceNetwork(int port, Client client, bool asClient)
+    {
+        this.asClient = asClient;
+
+        if (asClient)
+        { 
+            udpConnection = new UdpConnection(client.ipEndPoint.Address, port); 
+        }
+        else
+        {
+            udpConnection = new UdpConnection(port);
+        }
+
+        this.client = client;
+    }
+
+    public void SendData(byte[] data)
+    {
+        if (asClient)
+        {
+            udpConnection.Send(data);
+        }
+        else
+        {
+            udpConnection.Send(data, client.ipEndPoint);
+        }
+    }
+
+    public void Close()
+    {
+        udpConnection.Close();
+    }
+}
 
 public class ServerNetworkManager : NetworkManager
 {
@@ -10,22 +49,10 @@ public class ServerNetworkManager : NetworkManager
     protected TcpServerConnection tcpServerConnection = null;
     #endregion
 
-    #region UNITY_CALLS
-#if UNITY_SERVER
-    static void Main(string[] args)
-    {
-        if (args.Length > 0)
-        {
-            port = int.Parse(args[0]);
-        }
-    }
-#endif
-    #endregion
-
     #region PUBLIC_METHODS
     public void Start()
     {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+        ipAddress = IPAddress.Parse("127.0.0.1");
         //port = 8053;
         if (IsTcpConnection)
         {
@@ -62,6 +89,8 @@ public class ServerNetworkManager : NetworkManager
         {
             KickClient(clientsIds[i], false);
         }
+
+        udpConnection?.Close();
     }
 
     #region UDP
@@ -71,9 +100,12 @@ public class ServerNetworkManager : NetworkManager
 
         udpConnection = new UdpConnection(port, this);
 
-        onStartConnection?.Invoke(isServer);
+        onDefineIsServer?.Invoke(isServer);
+        onStartConnection?.Invoke();
 
-        Debug.Log("Server created");
+        Debug.Log("Server created on port " + port.ToString());
+
+        SendServerIsOnMessage();
 
         Application.quitting += ShutDownUdpServer;
     }
@@ -99,7 +131,12 @@ public class ServerNetworkManager : NetworkManager
 
         tcpServerConnection = new TcpServerConnection(ip, port, this);
 
-        onStartConnection.Invoke(isServer);
+        onDefineIsServer?.Invoke(isServer);
+        onStartConnection?.Invoke();
+    
+        Debug.Log("Server created on port " + port.ToString());
+
+        SendServerIsOnMessage();
     }
 
     public void TcpBroadcast(byte[] data)
@@ -137,12 +174,6 @@ public class ServerNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
-    {
-        (long, int) clientData = new ConnectRequestMessage().Deserialize(data);
-
-    }
-
     protected override void ProcessRemoveClient(byte[] data)
     {
         int clientId = new RemoveClientMessage().Deserialize(data);
@@ -182,6 +213,22 @@ public class ServerNetworkManager : NetworkManager
         {
             UdpBroadcast(new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1)); //admission time doesn't matter in this case because server was the originator
         }
+    }
+    #endregion
+
+    #region PRIVATE_METHODS
+    private void SendServerIsOnMessage()
+    {
+        Client matchMaker = new Client(new IPEndPoint(IPAddress.Parse(MatchMaker.ip), MatchMaker.matchMakerPort));
+        SendDataOnceNetwork sendDataOnceNetwork = new SendDataOnceNetwork(MatchMaker.matchMakerPort, matchMaker, true);
+        
+        ServerOnMessage serverOnMessage = new ServerOnMessage(port);
+
+        sendDataOnceNetwork.SendData(serverOnMessage.Serialize(-1));
+
+        Debug.Log("Send server is on message to match maker on port " + MatchMaker.matchMakerPort.ToString());
+
+        sendDataOnceNetwork.Close();
     }
     #endregion
 

@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-
 using UnityEngine;
 
 public class ClientNetworkManager : NetworkManager
@@ -66,7 +65,7 @@ public class ClientNetworkManager : NetworkManager
         //SendHandShake();
         SendConnectRequest();
 
-        onStartConnection.Invoke(isServer);
+        onDefineIsServer?.Invoke(isServer);
 
         Application.quitting += DisconectClient;
     }
@@ -92,7 +91,7 @@ public class ClientNetworkManager : NetworkManager
         //SendHandShake();
         SendConnectRequest();
 
-        onStartConnection.Invoke(isServer);
+        onDefineIsServer?.Invoke(isServer);
     }
 
     public void SendToTcpServer(byte[] data)
@@ -115,6 +114,23 @@ public class ClientNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
+    protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
+    {
+        (long server, int port) serverData = new ConnectRequestMessage().Deserialize(data);
+
+        udpConnection.Close();
+        udpConnection = null;
+        udpConnection = new UdpConnection(new IPAddress(serverData.server), serverData.port, this);
+
+        port = serverData.port;
+
+        Debug.Log("Received connection data, now connecting to port " + port.ToString() + " and sending handshake.");
+
+        SendHandShake();
+
+        onStartConnection.Invoke();
+    }
+
     protected override void ProcessRemoveClient(byte[] data)
     {
         int clientId = new RemoveClientMessage().Deserialize(data);

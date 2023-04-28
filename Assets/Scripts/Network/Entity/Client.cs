@@ -23,4 +23,9 @@ public class Client
         this.position = position;
         this.color = color;
     }
+
+    public Client(IPEndPoint ipEndPoint)
+    {
+        this.ipEndPoint = ipEndPoint;
+    }
 }

@@ -26,7 +26,8 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     private void OnDestroy()
     {
         if (NetworkManager.Instance != null)
-        { 
+        {
+            NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
             NetworkManager.Instance.onRemoveClient -= OnRemoveClient;
@@ -43,6 +44,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     protected override void Initialize()
     {
         DataHandler.Instance.onReceiveData += OnReceivePlayerData;
+        NetworkManager.Instance.onDefineIsServer += OnDefineIsServer;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
         NetworkManager.Instance.onRemoveClient += OnRemoveClient;
@@ -65,10 +67,13 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         playersSquares.Add(clientID, cube);
     }
 
-    private void OnStartConnection(bool isPlayerServer)
+    private void OnDefineIsServer(bool isPlayerServer)
     {
         isServer = isPlayerServer;
+    }
 
+    private void OnStartConnection()
+    {
         if (!isServer)
         {
             player.gameObject.SetActive(true);

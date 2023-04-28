@@ -15,25 +15,27 @@ public class MatchMaker : MonoBehaviour, IReceiveData
     private UdpConnection serverUdpConnection = null;
 
     private IPAddress ipAddress = null;
-    private int port = 0;
 
     private int serverId = 0;
 
     private List<ServerData> servers = new List<ServerData>();
     private Dictionary<int, Process> processes = new Dictionary<int, Process>();
+
+    private IPEndPoint lastClientIp = null;
     #endregion
 
     #region CONSTANTS
-    private const int startingPort = 8054;
-    private const int amountPlayersPerMatch = 2;
+    public const int matchMakerPort = 8053;
+    public const int startingPort = 8054;
+    public const int amountPlayersPerMatch = 2;
+    public const string ip = "127.0.0.1";
     #endregion
 
     #region UNITY_CALLS
 #if UNITY_SERVER
     private void Start()
     {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-        int port = 8053;
+        ipAddress = IPAddress.Parse(ip);
 
         //if (tcpConnection)
         //{
@@ -41,7 +43,7 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         //}
         //else
         //{
-            StartUdpServer(port);
+            StartUdpServer(matchMakerPort);
         //}
     }
 #endif
@@ -51,12 +53,17 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         clientUdpConnection?.FlushReceiveData();
         serverUdpConnection?.FlushReceiveData();
     }
+
+    private void OnDestroy()
+    {
+        clientUdpConnection?.Close();
+        serverUdpConnection?.Close();
+    }
     #endregion
 
     #region PUBLIC_METHODS
     public void StartUdpServer(int port)
     {
-        this.port = port;
         clientUdpConnection = new UdpConnection(port, this);
 
         Debug.Log("Server created");
@@ -68,8 +75,11 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         switch (messageType)
         {
+            case MESSAGE_TYPE.SERVER_ON:
+                ProcessServerOn(data);
+                break;
             case MESSAGE_TYPE.CONNECT_REQUEST:
-                ProcessConnectRequest(ip, data);
+                ProcessConnectRequest(data, ip);
                 //case MESSAGE_TYPE.SERVER_DATA_UPDATE
                 break;
             default:
@@ -79,30 +89,48 @@ public class MatchMaker : MonoBehaviour, IReceiveData
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    private void ProcessConnectRequest(IPEndPoint ip, byte[] data)
+    private void ProcessServerOn(byte[] data)
     {
+        int serverOnPort = new ServerOnMessage().Deserialize(data);
+
+        SendConnectDataToClient(servers.Where(server => server.port == serverOnPort).ToList()[0]);
+    }
+
+    private void ProcessConnectRequest(byte[] data, IPEndPoint ip)
+    {
+        (long server, int port) clientData = new ConnectRequestMessage().Deserialize(data); // only for log
+
+        Debug.Log("Received connection data from port " + clientData.port + ", now looking for server to send client");
+
         ServerData availableServer = GetAvailableServer();
 
         if (availableServer == null)
         {
-            availableServer = RunNewServer();
+            Debug.Log("No server was available, opening new one");
+            RunNewServer();
 
-            WaitForServerToOpen(() =>
-            {
-                SendConnectRequestToServer(availableServer, data);
-            });
+            lastClientIp = ip;
         }
         else
         {
-            SendConnectRequestToServer(availableServer, data);
+            Debug.Log("Found available server");
+            SendConnectDataToClient(availableServer);
         }        
     }
+    #endregion
 
-    private void SendConnectRequestToServer(ServerData availableServer, byte[] data)
+    #region PRIVATE_METHODS
+    private void SendConnectDataToClient(ServerData availableServer)
     {
-        serverUdpConnection = new UdpConnection(availableServer.port, this);
+        Debug.Log("Sending connection data to client");
 
-        serverUdpConnection.Send(data);
+        ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage((ipAddress.Address, availableServer.port));
+
+        clientUdpConnection.Send(connectRequestMessage.Serialize(-1), lastClientIp);
+
+        clientUdpConnection.Close();
+
+        clientUdpConnection = null;
     }
 
     private ServerData RunNewServer()
@@ -111,15 +139,15 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         ProcessStartInfo start = new ProcessStartInfo();
         start.Arguments = port.ToString();
-        start.FileName = "C:\\Users\\guill\\Desktop\\server\\Multiplayer.exe";
-        
+        start.FileName = "C:\\Users\\guill\\Desktop\\server\\Multiplayer.exe";//application.datapath
+
         Process process = Process.Start(start);
 
         ServerData server = new ServerData(serverId, port, 0);
 
         servers.Add(server);
         processes.Add(serverId, process);
-        
+
         serverId++;
 
         return server;
@@ -178,14 +206,5 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         return port;
     }
-    #endregion
-
-    #region AUX
-    private IEnumerator WaitForServerToOpen(Action callback)
-    {
-        yield return new WaitForSeconds(2);
-        callback?.Invoke();
-    }
-
     #endregion
 }
