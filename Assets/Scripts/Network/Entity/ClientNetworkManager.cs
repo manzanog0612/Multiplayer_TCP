@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+
 using UnityEngine;
 
 public class ClientNetworkManager : NetworkManager

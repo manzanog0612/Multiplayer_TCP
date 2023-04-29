@@ -18,7 +18,7 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
     private int serverId = 0;
 
-    private List<ServerData> servers = new List<ServerData>();
+    private Dictionary<int, ServerData> servers = new Dictionary<int, ServerData>();
     private Dictionary<int, Process> processes = new Dictionary<int, Process>();
 
     private IPEndPoint lastClientIp = null;
@@ -26,7 +26,6 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
     #region CONSTANTS
     public const int matchMakerPort = 8053;
-    public const int startingPort = 8054;
     public const int amountPlayersPerMatch = 2;
     public const string ip = "127.0.0.1";
     #endregion
@@ -75,12 +74,14 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         switch (messageType)
         {
+            case MESSAGE_TYPE.SERVER_DATA_UPDATE:
+                ProcessServerDataUpdate(data);
+                break;
             case MESSAGE_TYPE.SERVER_ON:
                 ProcessServerOn(data);
                 break;
             case MESSAGE_TYPE.CONNECT_REQUEST:
                 ProcessConnectRequest(data, ip);
-                //case MESSAGE_TYPE.SERVER_DATA_UPDATE
                 break;
             default:
                 break;
@@ -89,11 +90,26 @@ public class MatchMaker : MonoBehaviour, IReceiveData
     #endregion
 
     #region DATA_RECEIVE_PROCESS
+    private void ProcessServerDataUpdate(byte[] data)
+    {
+        ServerData serverData = new ServerDataUpdateMessage().Deserialize(data);
+
+        if (servers.ContainsKey(serverData.id))            
+        {
+            servers[serverData.id] = serverData;
+        }
+    }
+
     private void ProcessServerOn(byte[] data)
     {
         int serverOnPort = new ServerOnMessage().Deserialize(data);
 
-        SendConnectDataToClient(servers.Where(server => server.port == serverOnPort).ToList()[0]);
+        ServerData server = GetServerByPort(serverOnPort);
+
+        if (server != null)
+        { 
+            SendConnectDataToClient(server); 
+        }
     }
 
     private void ProcessConnectRequest(byte[] data, IPEndPoint ip)
@@ -134,14 +150,14 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         int port = GetAvailablePort();
 
         ProcessStartInfo start = new ProcessStartInfo();
-        start.Arguments = port.ToString();
+        start.Arguments = port.ToString() + "-" + serverId.ToString();
         start.FileName = "C:\\Users\\guill\\Desktop\\server\\Multiplayer.exe";//application.datapath
 
         Process process = Process.Start(start);
 
         ServerData server = new ServerData(serverId, port, 0);
 
-        servers.Add(server);
+        servers.Add(serverId, server);
         processes.Add(serverId, process);
 
         serverId++;
@@ -192,15 +208,31 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
     private int GetAvailablePort()
     {
-        int port = startingPort;
-        bool portIsUsed = servers.Where(server => server.port == port).ToList().Count > 0;
+        int port = matchMakerPort;
+        bool portIsUsed = true;
 
-        while (servers.Where(server => server.port == port).ToList().Count > 0)
+        while (portIsUsed)
         {
             port++;
+            portIsUsed = GetServerByPort(port) != null;
         }
 
         return port;
+    }
+    #endregion
+
+    #region AUX
+    private ServerData GetServerByPort(int port)
+    {
+        foreach (var server in servers)
+        {
+            if (server.Value.port == port)
+            {
+                return servers[server.Key];
+            }
+        }
+
+        return null;
     }
     #endregion
 }

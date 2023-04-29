@@ -10,8 +10,6 @@ public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
     [SerializeField] ClientHandler clientHandler = null;
 
     [SerializeField] Button connectBtn = null;
-    [SerializeField] InputField portInputField = null;
-    [SerializeField] InputField addressInputField = null;
     #endregion
 
     #region INITIALIZATION

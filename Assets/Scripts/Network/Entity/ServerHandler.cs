@@ -14,8 +14,9 @@ public class ServerHandler : MonoBehaviour
 
     private void Start()
     {
-        NetworkManager.port = int.Parse(Environment.GetCommandLineArgs()[1]);
-        serverNetworkManager.Start();
+        string[] args = Environment.GetCommandLineArgs()[1].Split('-');
+
+        serverNetworkManager.Start(int.Parse(args[0]), int.Parse(args[1]));
     }
 
     private void Update()

@@ -45,15 +45,23 @@ public class SendDataOnceNetwork
 public class ServerNetworkManager : NetworkManager
 {
     #region PRIVATE_FIELDS
+    protected UdpConnection matchMakerConnection = null;
     protected UdpConnection udpConnection = null;
     protected TcpServerConnection tcpServerConnection = null;
+
+    private ServerData serverData = null;
     #endregion
 
     #region PUBLIC_METHODS
-    public void Start()
+    public void Start(int port, int id)
     {
         ipAddress = IPAddress.Parse("127.0.0.1");
         //port = 8053;
+
+        NetworkManager.port = port;
+
+        serverData = new ServerData(id, port, 0);
+
         if (IsTcpConnection)
         {
             StartTcpServer(ipAddress, port);
@@ -104,6 +112,8 @@ public class ServerNetworkManager : NetworkManager
         onStartConnection?.Invoke();
 
         Debug.Log("Server created on port " + port.ToString());
+
+        matchMakerConnection = new UdpConnection(IPAddress.Parse(MatchMaker.ip), MatchMaker.matchMakerPort);
 
         SendServerIsOnMessage();
 
@@ -163,11 +173,14 @@ public class ServerNetworkManager : NetworkManager
         int id = this.clientId;
         ipToId[(ip, realtimeSinceStartup)] = id;
 
+        Debug.Log("Server" + " is adding client: " + id.ToString());
+
         clients.Add(id, new Client(ip, id, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>(), position, color));
 
         onAddNewClient?.Invoke(id, (ip.Address.Address, realtimeSinceStartup), position, color);
 
-        Debug.Log("Server" + " is adding client: " + id.ToString());
+        serverData.amountPlayers++;
+        SendServerUpdate();
 
         this.clientId++;
     }
@@ -217,18 +230,20 @@ public class ServerNetworkManager : NetworkManager
     #endregion
 
     #region PRIVATE_METHODS
+    private void SendServerUpdate()
+    {
+        ServerDataUpdateMessage serverOnMessage = new ServerDataUpdateMessage(serverData);
+        matchMakerConnection.Send(serverOnMessage.Serialize(-1));
+
+        Debug.Log("Send server update data to match maker");
+    }
+
     private void SendServerIsOnMessage()
     {
-        Client matchMaker = new Client(new IPEndPoint(IPAddress.Parse(MatchMaker.ip), MatchMaker.matchMakerPort));
-        SendDataOnceNetwork sendDataOnceNetwork = new SendDataOnceNetwork(MatchMaker.matchMakerPort, matchMaker, true);
-        
         ServerOnMessage serverOnMessage = new ServerOnMessage(port);
+        matchMakerConnection.Send(serverOnMessage.Serialize(-1));
 
-        sendDataOnceNetwork.SendData(serverOnMessage.Serialize(-1));
-
-        Debug.Log("Send server is on message to match maker on port " + MatchMaker.matchMakerPort.ToString());
-
-        sendDataOnceNetwork.Close();
+        Debug.Log("Send server is on message to match maker");
     }
     #endregion
 

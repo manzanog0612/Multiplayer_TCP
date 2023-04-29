@@ -1,14 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 public enum MESSAGE_TYPE
 {
-    SERVER_ON = -5,
-    CONNECT_REQUEST = -4,
-    CLIENT_DISCONECT = -3,
-    HAND_SHAKE = -2,
-    CLIENTS_LIST = -1,
+    SERVER_DATA_UPDATE = -6,
+    SERVER_ON,
+    CONNECT_REQUEST,
+    CLIENT_DISCONECT,
+    HAND_SHAKE,
+    CLIENTS_LIST,
     STRING = 0,
     VECTOR2,
     VECTOR3
