@@ -104,12 +104,12 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         ServerData availableServer = GetAvailableServer();
 
+        lastClientIp = ip;
+
         if (availableServer == null)
         {
             Debug.Log("No server was available, opening new one");
             RunNewServer();
-
-            lastClientIp = ip;
         }
         else
         {
@@ -127,10 +127,6 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage((ipAddress.Address, availableServer.port));
 
         clientUdpConnection.Send(connectRequestMessage.Serialize(-1), lastClientIp);
-
-        clientUdpConnection.Close();
-
-        clientUdpConnection = null;
     }
 
     private ServerData RunNewServer()
