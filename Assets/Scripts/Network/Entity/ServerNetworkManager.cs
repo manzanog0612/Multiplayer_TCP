@@ -2,46 +2,6 @@ using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
-public class SendDataOnceNetwork
-{
-    UdpConnection udpConnection = null;
-    Client client = null;
-    bool asClient = false;
-
-    public SendDataOnceNetwork(int port, Client client, bool asClient)
-    {
-        this.asClient = asClient;
-
-        if (asClient)
-        { 
-            udpConnection = new UdpConnection(client.ipEndPoint.Address, port); 
-        }
-        else
-        {
-            udpConnection = new UdpConnection(port);
-        }
-
-        this.client = client;
-    }
-
-    public void SendData(byte[] data)
-    {
-        if (asClient)
-        {
-            udpConnection.Send(data);
-        }
-        else
-        {
-            udpConnection.Send(data, client.ipEndPoint);
-        }
-    }
-
-    public void Close()
-    {
-        udpConnection.Close();
-    }
-}
-
 public class ServerNetworkManager : NetworkManager
 {
     #region PRIVATE_FIELDS
@@ -55,8 +15,7 @@ public class ServerNetworkManager : NetworkManager
     #region PUBLIC_METHODS
     public void Start(int port, int id)
     {
-        ipAddress = IPAddress.Parse("127.0.0.1");
-        //port = 8053;
+        ipAddress = IPAddress.Parse(MatchMaker.ip);
 
         NetworkManager.port = port;
 
@@ -99,6 +58,9 @@ public class ServerNetworkManager : NetworkManager
         }
 
         udpConnection?.Close();
+        udpConnection = null;
+
+        SendDisconnectMessage();
     }
 
     #region UDP
@@ -115,13 +77,18 @@ public class ServerNetworkManager : NetworkManager
 
         matchMakerConnection = new UdpConnection(IPAddress.Parse(MatchMaker.ip), MatchMaker.matchMakerPort);
 
-        SendServerIsOnMessage();
+        SendIsOnMessage();
 
         Application.quitting += ShutDownUdpServer;
     }
 
     public void UdpBroadcast(byte[] data)
     {
+        if (udpConnection == null)
+        {
+            return;
+        }
+
         using (var iterator = clients.GetEnumerator())
         {
             while (iterator.MoveNext())
@@ -146,7 +113,7 @@ public class ServerNetworkManager : NetworkManager
     
         Debug.Log("Server created on port " + port.ToString());
 
-        SendServerIsOnMessage();
+        SendIsOnMessage();
     }
 
     public void TcpBroadcast(byte[] data)
@@ -180,16 +147,29 @@ public class ServerNetworkManager : NetworkManager
         onAddNewClient?.Invoke(id, (ip.Address.Address, realtimeSinceStartup), position, color);
 
         serverData.amountPlayers++;
-        SendServerUpdate();
+        SendDataUpdate();
 
         this.clientId++;
+    }
+
+    protected override void RemoveClient(int id)
+    {
+        base.RemoveClient(id);
+
+        if (clients.ContainsKey(id))
+        {
+            return;
+        }
+
+        serverData.amountPlayers--;
+        SendDataUpdate();
     }
     #endregion
 
     #region DATA_RECEIVE_PROCESS
     protected override void ProcessRemoveClient(byte[] data)
     {
-        int clientId = new RemoveClientMessage().Deserialize(data);
+        int clientId = new RemoveEntityMessage().Deserialize(data);
 
         if (!clients.ContainsKey(clientId))
         {
@@ -230,7 +210,7 @@ public class ServerNetworkManager : NetworkManager
     #endregion
 
     #region PRIVATE_METHODS
-    private void SendServerUpdate()
+    private void SendDataUpdate()
     {
         ServerDataUpdateMessage serverOnMessage = new ServerDataUpdateMessage(serverData);
         matchMakerConnection.Send(serverOnMessage.Serialize(-1));
@@ -238,12 +218,20 @@ public class ServerNetworkManager : NetworkManager
         Debug.Log("Send server update data to match maker");
     }
 
-    private void SendServerIsOnMessage()
+    private void SendIsOnMessage()
     {
         ServerOnMessage serverOnMessage = new ServerOnMessage(port);
         matchMakerConnection.Send(serverOnMessage.Serialize(-1));
 
         Debug.Log("Send server is on message to match maker");
+    }
+
+    private void SendDisconnectMessage()
+    {
+        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(serverData.id);
+        matchMakerConnection.Send(removeEntityMessage.Serialize(-1));
+
+        Debug.Log("Send server disconnect");
     }
     #endregion
 

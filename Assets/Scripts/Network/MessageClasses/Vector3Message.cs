@@ -3,8 +3,10 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-public class Vector3Message : OrdenableMessage, IMessage<Vector3>
+public class Vector3Message : IMessage<Vector3>
 {
+    static public int lastMessageId = 0;
+
     #region PRIVATE_FIELDS
     private Vector3? data = null;
     #endregion

@@ -83,6 +83,9 @@ public class MatchMaker : MonoBehaviour, IReceiveData
             case MESSAGE_TYPE.CONNECT_REQUEST:
                 ProcessConnectRequest(data, ip);
                 break;
+            case MESSAGE_TYPE.ENTITY_DISCONECT:
+                ProcessEntityDisconnect(data);
+                break;
             default:
                 break;
         }
@@ -133,6 +136,25 @@ public class MatchMaker : MonoBehaviour, IReceiveData
             SendConnectDataToClient(availableServer);
         }        
     }
+
+    private void ProcessEntityDisconnect(byte[] data)
+    {
+        int serverId = new RemoveEntityMessage().Deserialize(data);
+
+        Debug.Log("MatchMaker received Server disconnect message for server " + serverId.ToString());
+
+        if (servers.ContainsKey(serverId))
+        {
+            servers.Remove(serverId);
+
+            if (!processes[serverId].HasExited)
+            { 
+                processes[serverId].Close(); 
+            }
+
+            processes.Remove(serverId);
+        }
+    }
     #endregion
 
     #region PRIVATE_METHODS
@@ -163,43 +185,16 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         serverId++;
 
         return server;
-
-        //using (proc)
-        //{
-        //    proc.WaitForExit();
-        //
-        //    // Retrieve the app's exit code
-        //    exitCode = proc.ExitCode;
-        //
-        //    int closedServerId = 0;
-        //    foreach (var process in processes)
-        //    {
-        //        if (process.Value == proc)
-        //        {
-        //            closedServerId = process.Key;
-        //            break;
-        //        }
-        //    }
-        //
-        //    for (int i = 0; i < servers.Count; i++)
-        //    {
-        //        if (servers[i].id == closedServerId)
-        //        {
-        //            servers.Remove(servers[i]);
-        //            break;
-        //        }
-        //    }
-        //    
-        //}
     }
 
+    #region AUX
     private ServerData GetAvailableServer()
     {
-        for (int i = 0; i < servers.Count; i++)
+        foreach (var server in servers)
         {
-            if (servers[i].amountPlayers < amountPlayersPerMatch)
+            if (server.Value.amountPlayers < amountPlayersPerMatch)
             {
-                return servers[i];
+                return servers[server.Key];
             }
         }
 
@@ -219,9 +214,7 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         return port;
     }
-    #endregion
 
-    #region AUX
     private ServerData GetServerByPort(int port)
     {
         foreach (var server in servers)
@@ -234,5 +227,6 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
         return null;
     }
+    #endregion
     #endregion
 }

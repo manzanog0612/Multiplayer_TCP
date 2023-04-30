@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 
-public class RemoveClientMessage : IMessage<int>
+public class RemoveEntityMessage : IMessage<int>
 {
     #region PRIVATE_FIELDS
     private int data;
     #endregion
 
     #region CONSTRUCTORS
-    public RemoveClientMessage() { }
+    public RemoveEntityMessage() { }
 
-    public RemoveClientMessage(int data)
+    public RemoveEntityMessage(int data)
     {
         this.data = data;
     }
@@ -28,7 +28,7 @@ public class RemoveClientMessage : IMessage<int>
 
     public MESSAGE_TYPE GetMessageType()
     {
-        return MESSAGE_TYPE.CLIENT_DISCONECT;
+        return MESSAGE_TYPE.ENTITY_DISCONECT;
     }
 
     public byte[] Serialize(float admissionTime)

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-public class StringMessage : OrdenableMessage, IMessage<string>
+public class StringMessage : IMessage<string>
 {
+    static public int lastMessageId = 0;
+
     #region PRIVATE_FIELDS
     private string data = null;
     #endregion

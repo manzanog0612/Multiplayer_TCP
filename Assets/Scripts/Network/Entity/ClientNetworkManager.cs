@@ -89,7 +89,6 @@ public class ClientNetworkManager : NetworkManager
 
         tcpClientConnection = new TcpClientConnection(ip, port, this);
 
-        //SendHandShake();
         SendConnectRequest();
 
         onDefineIsServer?.Invoke(isServer);
@@ -134,7 +133,7 @@ public class ClientNetworkManager : NetworkManager
 
     protected override void ProcessRemoveClient(byte[] data)
     {
-        int clientId = new RemoveClientMessage().Deserialize(data);
+        int clientId = new RemoveEntityMessage().Deserialize(data);
 
         if (!clients.ContainsKey(clientId))
         {
@@ -143,6 +142,7 @@ public class ClientNetworkManager : NetworkManager
 
         if (clientId == assignedId)
         {
+            udpConnection.Close();
             Application.Quit();
         }
         else

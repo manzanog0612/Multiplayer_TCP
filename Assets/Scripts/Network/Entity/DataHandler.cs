@@ -21,13 +21,11 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
             NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
         }
     }
-    #endregion
 
-    #region INITIALIZATION
-    protected override void Initialize()
+    private void Awake()
     {
         NetworkManager.Instance.onReceiveEvent += OnReceiveDataEvent;
-        NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
+        NetworkManager.Instance.onDefineIsServer += OnDefineIsServer;
 
         tcpConnection = NetworkManager.Instance.IsTcpConnection;
     }

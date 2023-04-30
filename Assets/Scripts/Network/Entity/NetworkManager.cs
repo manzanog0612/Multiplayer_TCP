@@ -54,7 +54,7 @@ public class NetworkManager : IReceiveData
             case MESSAGE_TYPE.CONNECT_REQUEST:
                 ProcessConnectRequest(ip, data);
                 break;
-            case MESSAGE_TYPE.CLIENT_DISCONECT:
+            case MESSAGE_TYPE.ENTITY_DISCONECT:
                 ProcessRemoveClient(data);
                 break;
             case MESSAGE_TYPE.HAND_SHAKE:
@@ -75,7 +75,7 @@ public class NetworkManager : IReceiveData
     public void KickClient(int id, bool closeApp = true)
     {
         Debug.Log("Removing player " + id.ToString());
-        RemoveClientMessage removeClientMessage = new RemoveClientMessage(id);
+        RemoveEntityMessage removeClientMessage = new RemoveEntityMessage(id);
 
         if (!clients.ContainsKey(id))
         {
@@ -108,7 +108,7 @@ public class NetworkManager : IReceiveData
         onAddNewClient?.Invoke(clientId, (ip.Address.Address, realtimeSinceStartup), position, color);        
     }
 
-    protected void RemoveClient(int id)
+    protected virtual void RemoveClient(int id)
     {
         if (!clients.ContainsKey(id))
         {
