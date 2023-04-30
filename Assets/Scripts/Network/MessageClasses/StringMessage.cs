@@ -23,8 +23,8 @@ public class StringMessage : IMessage<string>
     {
         string outData = string.Empty;
 
-        short charSize = 2;
-        short messageStartIndex = 12;
+        int charSize = sizeof(char);
+        int messageStartIndex = GetHeaderSize();
 
         for (int i = 0; i < (message.Length - messageStartIndex) / charSize; i++)
         {
@@ -41,6 +41,11 @@ public class StringMessage : IMessage<string>
         return outData; //+ " " + new MessageFormater().GetMessageId(message);
     }
 
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
+    }
+
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.STRING;
@@ -50,9 +55,10 @@ public class StringMessage : IMessage<string>
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
-        outData.AddRange(BitConverter.GetBytes(admissionTime));
-        outData.AddRange(BitConverter.GetBytes(lastMessageId++));
+        lastMessageId++;
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
+        
+        outData.AddRange(messageHeader.Bytes);
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -60,6 +66,11 @@ public class StringMessage : IMessage<string>
         }
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int) + sizeof(float) + sizeof(int);
     }
     #endregion
 }

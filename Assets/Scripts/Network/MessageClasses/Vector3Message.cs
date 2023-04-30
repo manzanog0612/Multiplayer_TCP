@@ -25,11 +25,16 @@ public class Vector3Message : IMessage<Vector3>
     {
         Vector3 outData;
 
-        outData.x = BitConverter.ToSingle(message, 12);
-        outData.y = BitConverter.ToSingle(message, 16);
-        outData.z = BitConverter.ToSingle(message, 20);
+        outData.x = BitConverter.ToSingle(message, GetHeaderSize());
+        outData.y = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(float));
+        outData.z = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(float) * 2);
 
         return outData;
+    }
+
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -41,15 +46,21 @@ public class Vector3Message : IMessage<Vector3>
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
-        outData.AddRange(BitConverter.GetBytes(admissionTime));
-        outData.AddRange(BitConverter.GetBytes(lastMessageId++));
+        lastMessageId++;
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
+
+        outData.AddRange(messageHeader.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(((Vector3)data).x));
         outData.AddRange(BitConverter.GetBytes(((Vector3)data).y));
         outData.AddRange(BitConverter.GetBytes(((Vector3)data).z));
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int) + sizeof(float) + sizeof(int);
     }
     #endregion
 }

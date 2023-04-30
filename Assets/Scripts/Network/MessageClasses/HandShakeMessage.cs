@@ -22,14 +22,19 @@ public class HandShakeMessage : IMessage<(long, int, Color)>
     {
         (long, int, Color) outData;
 
-        outData.Item1 = BitConverter.ToInt64(message, 8);
-        outData.Item2 = BitConverter.ToInt32(message, 16);
-        outData.Item3.r = BitConverter.ToSingle(message, 20);
-        outData.Item3.g = BitConverter.ToSingle(message, 24);
-        outData.Item3.b = BitConverter.ToSingle(message, 28);
-        outData.Item3.a = BitConverter.ToSingle(message, 32);
+        outData.Item1 = BitConverter.ToInt64(message, GetHeaderSize());
+        outData.Item2 = BitConverter.ToInt32(message, GetHeaderSize() + sizeof(long));
+        outData.Item3.r = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int));
+        outData.Item3.g = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int) + sizeof(float));
+        outData.Item3.b = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int) + sizeof(float) * 2);
+        outData.Item3.a = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int) + sizeof(float) * 3);
 
         return outData;
+    }
+
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType(), admissionTime);
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -41,8 +46,9 @@ public class HandShakeMessage : IMessage<(long, int, Color)>
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
-        outData.AddRange(BitConverter.GetBytes(admissionTime));
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
+
+        outData.AddRange(messageHeader.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(data.Item1));
         outData.AddRange(BitConverter.GetBytes(data.Item2));
@@ -52,6 +58,11 @@ public class HandShakeMessage : IMessage<(long, int, Color)>
         outData.AddRange(BitConverter.GetBytes(data.Item3.a));
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int) + sizeof(float);
     }
     #endregion
 }

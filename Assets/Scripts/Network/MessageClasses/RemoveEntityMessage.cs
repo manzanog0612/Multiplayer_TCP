@@ -21,9 +21,14 @@ public class RemoveEntityMessage : IMessage<int>
     {
         int outData;
 
-        outData = BitConverter.ToInt32(message, 8);
+        outData = BitConverter.ToInt32(message, GetHeaderSize());
 
         return outData;
+    }
+
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType(), admissionTime);
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -35,11 +40,17 @@ public class RemoveEntityMessage : IMessage<int>
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
-        outData.AddRange(BitConverter.GetBytes(admissionTime));
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
+
+        outData.AddRange(messageHeader.Bytes);
         outData.AddRange(BitConverter.GetBytes(data));
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int) + sizeof(float);
     }
     #endregion
 }

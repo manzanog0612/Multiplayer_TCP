@@ -25,10 +25,15 @@ public class Vector2Message : IMessage<Vector2>
     {
         Vector2 outData;
 
-        outData.x = BitConverter.ToSingle(message, 12);
-        outData.y = BitConverter.ToSingle(message, 16);
+        outData.x = BitConverter.ToSingle(message, GetHeaderSize());
+        outData.y = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(float));
 
         return outData;
+    }
+
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -40,14 +45,19 @@ public class Vector2Message : IMessage<Vector2>
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
-        outData.AddRange(BitConverter.GetBytes(admissionTime));
-        outData.AddRange(BitConverter.GetBytes(lastMessageId++));
+        lastMessageId++;
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
 
+        outData.AddRange(messageHeader.Bytes);
         outData.AddRange(BitConverter.GetBytes(((Vector2)data).x));
         outData.AddRange(BitConverter.GetBytes(((Vector2)data).y));
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int) + sizeof(float) + sizeof(int);
     }
     #endregion
 }

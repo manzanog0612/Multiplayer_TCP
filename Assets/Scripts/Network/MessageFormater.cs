@@ -1,47 +1,40 @@
 using System;
-using System.Collections.Generic;
 
 public static class MessageFormater
 {
+    #region CONSTANTS
+    private const int sendTimeStart = 0;
+    private const int messageTypeStart = sizeof(float);
+    private const int admissionTimeStart = messageTypeStart + sizeof(int);
+    private const int messageIdStart = admissionTimeStart + sizeof(float);
+    #endregion
+
     #region PUBLIC_METHODS
-    public static MESSAGE_TYPE GetMessageType(byte[] data)
+    public static float GetMessageSendTime(byte[] data)
     {
-        List<byte> messageTypeBytes = new List<byte>();
-
-        for (int i = 0; i < 4; i++)
-        {
-            messageTypeBytes.Add(data[i]);
-        }
-
-        MESSAGE_TYPE messageType = (MESSAGE_TYPE)BitConverter.ToInt32(messageTypeBytes.ToArray());
+        float messageType = BitConverter.ToSingle(data, sendTimeStart);
 
         return messageType;
     }
 
-    public static int GetMessageId(byte[] data)
+
+    public static MESSAGE_TYPE GetMessageType(byte[] data)
     {
-        List<byte> messageTypeBytes = new List<byte>();
+        MESSAGE_TYPE messageType = (MESSAGE_TYPE)BitConverter.ToInt32(data, messageTypeStart);
 
-        for (int i = 8; i < 12; i++)
-        {
-            messageTypeBytes.Add(data[i]);
-        }
-
-        int messageId = BitConverter.ToInt32(messageTypeBytes.ToArray());
-
-        return messageId;
+        return messageType;
     }
 
     public static float GetAdmissionTime(byte[] data)
     {
-        List<byte> messageTypeBytes = new List<byte>();
+        float messageId = BitConverter.ToSingle(data, admissionTimeStart);
 
-        for (int i = 4; i < 8; i++)
-        {
-            messageTypeBytes.Add(data[i]);
-        }
+        return messageId;
+    }
 
-        float messageId = BitConverter.ToSingle(messageTypeBytes.ToArray());
+    public static int GetMessageId(byte[] data)
+    {
+        int messageId = BitConverter.ToInt32(data, messageIdStart);
 
         return messageId;
     }

@@ -16,7 +16,9 @@ public interface IMessage<T>
     public MESSAGE_TYPE GetMessageType();
     public T Deserialize(byte[] message);
 
-    //public MessageHeader GetMessageHeader();
+    public MessageHeader GetMessageHeader(float admissionTime);
 
     public byte[] Serialize(float admissionTime);
+
+    public int GetHeaderSize();
 }

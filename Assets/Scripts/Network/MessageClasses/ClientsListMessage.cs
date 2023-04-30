@@ -23,9 +23,9 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
     {
         List<(int, long, float, Vector3, Color)> outData = new List<(int, long, float, Vector3, Color)>();
 
-        short messageStartIndex = 4;
+        short messageStartIndex = (short)GetHeaderSize();
         List<byte> bytes = new List<byte>();
-        short idBytes = 4;
+        short idBytes = sizeof(int);
 
         for (int i = messageStartIndex; i < idBytes + messageStartIndex; i++)
         {
@@ -34,13 +34,13 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         
         int id = BitConverter.ToInt32(bytes.ToArray());
 
-        short item1Size = 4;// int 4
-        short item2Size = 8;// long 8
-        short item3Size = 4;// float 4
-        short item4Size = 12; // float 4 * 3 (vector3)
-        short item5Size = 16;
+        short item1Size = sizeof(int);
+        short item2Size = sizeof(long);
+        short item3Size = sizeof(float);
+        short item4Size = sizeof(float) * 3;
+        short item5Size = sizeof(float) * 4;
         short totalItemSize = (short)(item1Size + item2Size + item3Size + item4Size + item5Size);
-        messageStartIndex = 8;
+        messageStartIndex = (short)(GetHeaderSize() + sizeof(int));
 
         List<byte> GetClientBytes(int i, short size, short itemTotalOffset)
         {
@@ -70,22 +70,27 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
 
             clientBytes = GetClientBytes(i, item4Size, (short)(item1Size + item2Size + item3Size));
             Vector3 item4;
-            item4.x = BitConverter.ToSingle(clientBytes.ToArray(), 0);
-            item4.y = BitConverter.ToSingle(clientBytes.ToArray(), 4);
-            item4.z = BitConverter.ToSingle(clientBytes.ToArray(), 8);
+            item4.x = BitConverter.ToSingle(clientBytes.ToArray());
+            item4.y = BitConverter.ToSingle(clientBytes.ToArray(), sizeof(float));
+            item4.z = BitConverter.ToSingle(clientBytes.ToArray(), sizeof(float) * 2);
             clientBytes.Clear();
 
             clientBytes = GetClientBytes(i, item5Size, (short)(item1Size + item2Size + item3Size + item4Size));
             Color item5;
-            item5.r = BitConverter.ToSingle(clientBytes.ToArray(), 0);
-            item5.g = BitConverter.ToSingle(clientBytes.ToArray(), 4);
-            item5.b = BitConverter.ToSingle(clientBytes.ToArray(), 8);
-            item5.a = BitConverter.ToSingle(clientBytes.ToArray(), 12);
+            item5.r = BitConverter.ToSingle(clientBytes.ToArray());
+            item5.g = BitConverter.ToSingle(clientBytes.ToArray(), sizeof(float));
+            item5.b = BitConverter.ToSingle(clientBytes.ToArray(), sizeof(float) * 2);
+            item5.a = BitConverter.ToSingle(clientBytes.ToArray(), sizeof(float) * 3);
 
             outData.Add((item1, item2, item3, item4, item5));
         }
 
         return (outData.ToArray(), id);
+    }
+
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType());
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -97,7 +102,9 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
+
+        outData.AddRange(messageHeader.Bytes);
         outData.AddRange(BitConverter.GetBytes(data.id));
 
         for (int i = 0; i < data.initialDatas.Length; i++)
@@ -115,6 +122,11 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         }
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int);
     }
     #endregion
 }

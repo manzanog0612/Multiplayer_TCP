@@ -19,9 +19,14 @@ public class ServerDataUpdateMessage : IMessage<ServerData>
     #region PUBLIC_METHODS
     public ServerData Deserialize(byte[] message)
     {
-        ServerData outData = new ServerData(BitConverter.ToInt32(message, 4), BitConverter.ToInt32(message, 8), BitConverter.ToInt32(message, 12));
+        ServerData outData = new ServerData(BitConverter.ToInt32(message, GetHeaderSize()), BitConverter.ToInt32(message, GetHeaderSize() + sizeof(int)), BitConverter.ToInt32(message, GetHeaderSize() + sizeof(int) + sizeof(int)));
 
         return outData;
+    }
+
+    public MessageHeader GetMessageHeader(float admissionTime)
+    {
+        return new MessageHeader((int)GetMessageType());
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -33,13 +38,19 @@ public class ServerDataUpdateMessage : IMessage<ServerData>
     {
         List<byte> outData = new List<byte>();
 
-        outData.AddRange(BitConverter.GetBytes((int)GetMessageType()));
+        MessageHeader messageHeader = GetMessageHeader(admissionTime);
 
+        outData.AddRange(messageHeader.Bytes);
         outData.AddRange(BitConverter.GetBytes(data.id));
         outData.AddRange(BitConverter.GetBytes(data.port));
         outData.AddRange(BitConverter.GetBytes(data.amountPlayers));
 
         return outData.ToArray();
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(float) + sizeof(int);
     }
     #endregion
 }

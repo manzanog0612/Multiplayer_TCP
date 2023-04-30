@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 
-using UnityEngine;
-
 public class PlayerDataMessage : IMessage<PlayerData>
 {
     #region PRIVATE_FIELDS
@@ -68,6 +66,16 @@ public class PlayerDataMessage : IMessage<PlayerData>
         }
 
         return outData.ToArray();
+    }
+
+    int IMessage<PlayerData>.GetHeaderSize()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    MessageHeader IMessage<PlayerData>.GetMessageHeader(float admissionTime)
+    {
+        throw new System.NotImplementedException();
     }
     #endregion
 }
