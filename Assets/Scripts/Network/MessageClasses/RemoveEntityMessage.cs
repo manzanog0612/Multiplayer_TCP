@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public class RemoveEntityMessage : IMessage<int>
+public class RemoveEntityMessage : SemiTcpMessage, IMessage<int>
 {
     #region PRIVATE_FIELDS
     private int data;
@@ -21,7 +21,7 @@ public class RemoveEntityMessage : IMessage<int>
     {
         int outData;
 
-        outData = BitConverter.ToInt32(message, GetHeaderSize());
+        outData = BitConverter.ToInt32(message, GetHeaderSize() + GetTailSize());
 
         return outData;
     }
@@ -29,6 +29,20 @@ public class RemoveEntityMessage : IMessage<int>
     public MessageHeader GetMessageHeader(float admissionTime)
     {
         return new MessageHeader((int)GetMessageType(), admissionTime);
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
+    }
+
+    public override MessageTail GetMessageTail()
+    {
+        List<float> messageOperationParts = new List<float>();
+
+        messageOperationParts.Add(data);
+
+        return new MessageTail(messageOperationParts.ToArray());
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -41,16 +55,14 @@ public class RemoveEntityMessage : IMessage<int>
         List<byte> outData = new List<byte>();
 
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
+        MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
+        outData.AddRange(messageTail.Bytes);
+
         outData.AddRange(BitConverter.GetBytes(data));
 
         return outData.ToArray();
-    }
-
-    public int GetHeaderSize()
-    {
-        return sizeof(float) + sizeof(int) + sizeof(float);
     }
     #endregion
 }

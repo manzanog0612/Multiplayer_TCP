@@ -1,6 +1,7 @@
 public enum MESSAGE_TYPE
 {
-    SERVER_DATA_UPDATE = -6,
+    RESEND_DATA = -7,
+    SERVER_DATA_UPDATE,
     SERVER_ON,
     CONNECT_REQUEST,
     ENTITY_DISCONECT,
@@ -14,6 +15,7 @@ public enum MESSAGE_TYPE
 public interface IMessage<T>
 {
     public MESSAGE_TYPE GetMessageType();
+
     public T Deserialize(byte[] message);
 
     public MessageHeader GetMessageHeader(float admissionTime);

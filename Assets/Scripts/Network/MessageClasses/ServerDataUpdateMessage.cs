@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public class ServerDataUpdateMessage : IMessage<ServerData>
+public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
 {
     #region PRIVATE_FIELDS
     private ServerData data = null;
@@ -19,7 +19,9 @@ public class ServerDataUpdateMessage : IMessage<ServerData>
     #region PUBLIC_METHODS
     public ServerData Deserialize(byte[] message)
     {
-        ServerData outData = new ServerData(BitConverter.ToInt32(message, GetHeaderSize()), BitConverter.ToInt32(message, GetHeaderSize() + sizeof(int)), BitConverter.ToInt32(message, GetHeaderSize() + sizeof(int) + sizeof(int)));
+        int messageStart = GetHeaderSize() + GetTailSize();
+
+        ServerData outData = new ServerData(BitConverter.ToInt32(message, messageStart), BitConverter.ToInt32(message, messageStart + sizeof(int)), BitConverter.ToInt32(message, messageStart + sizeof(int) + sizeof(int)));
 
         return outData;
     }
@@ -27,6 +29,22 @@ public class ServerDataUpdateMessage : IMessage<ServerData>
     public MessageHeader GetMessageHeader(float admissionTime)
     {
         return new MessageHeader((int)GetMessageType());
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
+    }
+
+    public override MessageTail GetMessageTail()
+    {
+        List<float> messageOperationParts = new List<float>();
+
+        messageOperationParts.Add(data.id);
+        messageOperationParts.Add(data.port);
+        messageOperationParts.Add(data.amountPlayers);
+
+        return new MessageTail(messageOperationParts.ToArray());
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -39,18 +57,16 @@ public class ServerDataUpdateMessage : IMessage<ServerData>
         List<byte> outData = new List<byte>();
 
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
+        MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
+        outData.AddRange(messageTail.Bytes);
+
         outData.AddRange(BitConverter.GetBytes(data.id));
         outData.AddRange(BitConverter.GetBytes(data.port));
         outData.AddRange(BitConverter.GetBytes(data.amountPlayers));
 
         return outData.ToArray();
-    }
-
-    public int GetHeaderSize()
-    {
-        return sizeof(float) + sizeof(int);
     }
     #endregion
 }

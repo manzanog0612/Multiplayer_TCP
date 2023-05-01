@@ -4,19 +4,25 @@ public static class MessageFormater
 {
     #region CONSTANTS
     private const int sendTimeStart = 0;
-    private const int messageTypeStart = sizeof(float);
+    private const int messageTypeStart = sizeof(int) * 5;
     private const int admissionTimeStart = messageTypeStart + sizeof(int);
     private const int messageIdStart = admissionTimeStart + sizeof(float);
     #endregion
 
     #region PUBLIC_METHODS
-    public static float GetMessageSendTime(byte[] data)
+
+    public static (int days, int hours, int minutes, int seconds, int millisecond) GetMessageSendTime(byte[] data)
     {
-        float messageType = BitConverter.ToSingle(data, sendTimeStart);
+        (int days, int hours, int minutes, int seconds, int millisecond) messageSendTime;
 
-        return messageType;
+        messageSendTime.days = BitConverter.ToInt32(data, sendTimeStart);
+        messageSendTime.hours = BitConverter.ToInt32(data, sendTimeStart + sizeof(int));
+        messageSendTime.minutes = BitConverter.ToInt32(data, sendTimeStart + sizeof(int) * 2);
+        messageSendTime.seconds = BitConverter.ToInt32(data, sendTimeStart + sizeof(int) * 3);
+        messageSendTime.millisecond = BitConverter.ToInt32(data, sendTimeStart + sizeof(int) * 4);
+
+        return messageSendTime;
     }
-
 
     public static MESSAGE_TYPE GetMessageType(byte[] data)
     {

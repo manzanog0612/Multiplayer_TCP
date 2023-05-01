@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public class ConnectRequestMessage : IMessage<(long, int)>
+public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
 {
     #region PRIVATE_FIELDS
     private (long, int) data;
@@ -21,8 +21,10 @@ public class ConnectRequestMessage : IMessage<(long, int)>
     {
         (long, int) outData;
 
-        outData.Item1 = BitConverter.ToInt64(message, GetHeaderSize());
-        outData.Item2 = BitConverter.ToInt32(message, GetHeaderSize() + sizeof(long));
+        int messageStart = GetHeaderSize() + GetTailSize();
+
+        outData.Item1 = BitConverter.ToInt64(message, messageStart);
+        outData.Item2 = BitConverter.ToInt32(message, messageStart + sizeof(long));
 
         return outData;
     }
@@ -30,6 +32,21 @@ public class ConnectRequestMessage : IMessage<(long, int)>
     public MessageHeader GetMessageHeader(float admissionTime)
     {
         return new MessageHeader((int)GetMessageType());
+    }
+
+    public int GetHeaderSize()
+    {
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
+    }
+
+    public override MessageTail GetMessageTail()
+    {
+        List<float> messageOperationParts = new List<float>();
+
+        messageOperationParts.Add(data.Item1);
+        messageOperationParts.Add(data.Item2);
+
+        return new MessageTail(messageOperationParts.ToArray());
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -42,17 +59,15 @@ public class ConnectRequestMessage : IMessage<(long, int)>
         List<byte> outData = new List<byte>();
 
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
+        MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
+        outData.AddRange(messageTail.Bytes);
+
         outData.AddRange(BitConverter.GetBytes(data.Item1));
         outData.AddRange(BitConverter.GetBytes(data.Item2));
 
         return outData.ToArray();
-    }
-
-    public int GetHeaderSize()
-    {
-        return sizeof(float) + sizeof(int);
     }
     #endregion
 }

@@ -1,25 +1,25 @@
 using System;
 using System.Collections.Generic;
 
-public class ServerOnMessage : SemiTcpMessage, IMessage<int>
+public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
 {
     #region PRIVATE_FIELDS
-    private int data;
+    private MESSAGE_TYPE data;
     #endregion
 
     #region CONSTRUCTORS
-    public ServerOnMessage() { }
+    public ResendDataMessage() { }
 
-    public ServerOnMessage(int data)
+    public ResendDataMessage(MESSAGE_TYPE data)
     {
         this.data = data;
     }
     #endregion
 
     #region PUBLIC_METHODS
-    public int Deserialize(byte[] message)
+    public MESSAGE_TYPE Deserialize(byte[] message)
     {
-        int outData = BitConverter.ToInt32(message, GetHeaderSize() + GetTailSize());
+        MESSAGE_TYPE outData = (MESSAGE_TYPE)BitConverter.ToInt32(message, GetHeaderSize() + GetTailSize());
 
         return outData;
     }
@@ -38,14 +38,14 @@ public class ServerOnMessage : SemiTcpMessage, IMessage<int>
     {
         List<float> messageOperationParts = new List<float>();
 
-        messageOperationParts.Add(data);
+        messageOperationParts.Add((int)data);
 
         return new MessageTail(messageOperationParts.ToArray());
     }
 
     public MESSAGE_TYPE GetMessageType()
     {
-        return MESSAGE_TYPE.SERVER_ON;
+        return MESSAGE_TYPE.RESEND_DATA;
     }
 
     public byte[] Serialize(float admissionTime)
@@ -58,7 +58,7 @@ public class ServerOnMessage : SemiTcpMessage, IMessage<int>
         outData.AddRange(messageHeader.Bytes);
         outData.AddRange(messageTail.Bytes);
 
-        outData.AddRange(BitConverter.GetBytes(data));
+        outData.AddRange(BitConverter.GetBytes((int)data));
 
         return outData.ToArray();
     }

@@ -8,12 +8,6 @@ public class ClientNetworkManager : NetworkManager
     #region PRIVATE_FIELDS
     protected UdpConnection udpConnection = null;
     protected TcpClientConnection tcpClientConnection = null;
-
-    private bool waitingHandShakeBack = false;
-    private bool waitingConnectionRequestBack = false;
-
-    private float handShakeTimer = 0.0f;
-    private float connectionRequestTimer = 0.0f;
     #endregion
 
     #region PROPERTIES
@@ -27,24 +21,6 @@ public class ClientNetworkManager : NetworkManager
 
         udpConnection?.FlushReceiveData();
         tcpClientConnection?.FlushReceiveData();
-
-        //if (waitingHandShakeBack)
-        //{
-        //    WaitForAction(5, ref handShakeTimer, () =>
-        //    {
-        //        SendHandShake();
-        //        handShakeTimer = 0;
-        //    });
-        //}
-        //
-        //if (waitingConnectionRequestBack)
-        //{
-        //    WaitForAction(5, ref connectionRequestTimer, () =>
-        //    {
-        //        SendConnectRequest();
-        //        connectionRequestTimer = 0;
-        //    });
-        //}
     }
 
     public void DisconectClient()
@@ -73,7 +49,7 @@ public class ClientNetworkManager : NetworkManager
 
     public void SendToUdpServer(byte[] data)
     {
-        udpConnection.Send(data);
+        udpConnection?.Send(data);
 
         onSendData?.Invoke();
     }
@@ -114,8 +90,36 @@ public class ClientNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
+    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
+    {
+        base.ProcessResendData(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA);
+            return;
+        }
+
+        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+
+        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
+
+        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
+        {
+            SendData(lastSemiTcpMessages[messageTypeToResend].Item1);
+        }
+    }
+
     protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
     {
+        base.ProcessConnectRequest(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST);
+            return;
+        }
+
         (long server, int port) serverData = new ConnectRequestMessage().Deserialize(data);
 
         udpConnection.Close();
@@ -131,8 +135,16 @@ public class ClientNetworkManager : NetworkManager
         onStartConnection.Invoke();
     }
 
-    protected override void ProcessRemoveClient(byte[] data)
+    protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
     {
+        base.ProcessEntityDisconnect(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT);
+            return;
+        }
+
         int clientId = new RemoveEntityMessage().Deserialize(data);
 
         if (!clients.ContainsKey(clientId))
@@ -153,6 +165,14 @@ public class ClientNetworkManager : NetworkManager
 
     protected override void ProcessClientList(byte[] data)
     {
+        base.ProcessClientList(data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.CLIENTS_LIST);
+            return;
+        }
+
         Debug.Log("Client" + assignedId.ToString() + " is adding processing client list");
 
         ((int id, long server, float timeSinceConection, Vector3 position, Color color)[] clientsList, int id) = new ClientsListMessage().Deserialize(data);
@@ -163,15 +183,8 @@ public class ClientNetworkManager : NetworkManager
             AddClient(client, clientsList[i].id, clientsList[i].timeSinceConection, clientsList[i].position, clientsList[i].color);
         }
 
-        if (!waitingHandShakeBack)
-        {
-            return;
-        }
-
         Debug.Log("Client" + assignedId.ToString() + " got his id = " + id.ToString() + " assigned for first time");
         assignedId = id;
-
-        waitingHandShakeBack = false;
     }
     #endregion
 
@@ -180,16 +193,12 @@ public class ClientNetworkManager : NetworkManager
     {
         IPEndPoint client = new IPEndPoint(ipAddress, port);
         ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage((client.Address.Address, client.Port));
-        waitingConnectionRequestBack = true;
 
-        if (IsTcpConnection)
-        {
-            SendToTcpServer(connectRequestMessage.Serialize(admissionTimeStamp));
-        }
-        else
-        {
-            SendToUdpServer(connectRequestMessage.Serialize(admissionTimeStamp));
-        }
+        byte[] message = connectRequestMessage.Serialize(admissionTimeStamp);
+
+        SendData(message);
+
+        SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, message);
     }
 
     private void SendHandShake()
@@ -198,29 +207,25 @@ public class ClientNetworkManager : NetworkManager
         admissionTimeStamp = Time.realtimeSinceStartup;
 
         HandShakeMessage handShakeMessage = new HandShakeMessage((client.Address.Address, client.Port, new Color(RandNum(), RandNum(), RandNum(), 1)));
-        waitingHandShakeBack = true;
 
-        if (IsTcpConnection)
-        {
-            SendToTcpServer(handShakeMessage.Serialize(admissionTimeStamp));
-        }
-        else
-        {
-            SendToUdpServer(handShakeMessage.Serialize(admissionTimeStamp));
-        }
+        byte[] message = handShakeMessage.Serialize(admissionTimeStamp);
+
+        SendData(message);
+
+        SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, message);
     }
     #endregion
 
     #region AUX
-    private void WaitForAction(int maxWaitTime, ref float time, Action callback)
+    protected override void SendData(byte[] data)
     {
-        if (time < maxWaitTime)
+        if (IsTcpConnection)
         {
-            time += Time.deltaTime;
+            SendToTcpServer(data);
         }
         else
         {
-            callback.Invoke();
+            SendToUdpServer(data);
         }
     }
 

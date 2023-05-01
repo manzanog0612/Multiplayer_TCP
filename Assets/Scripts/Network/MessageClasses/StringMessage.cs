@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public class StringMessage : IMessage<string>
+public class StringMessage : SemiTcpMessage, IMessage<string>
 {
     static public int lastMessageId = 0;
 
@@ -24,7 +24,7 @@ public class StringMessage : IMessage<string>
         string outData = string.Empty;
 
         int charSize = sizeof(char);
-        int messageStartIndex = GetHeaderSize();
+        int messageStartIndex = GetHeaderSize() + GetTailSize();
 
         for (int i = 0; i < (message.Length - messageStartIndex) / charSize; i++)
         {
@@ -46,6 +46,23 @@ public class StringMessage : IMessage<string>
         return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
     }
 
+    public int GetHeaderSize()
+    {
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
+    }
+
+    public override MessageTail GetMessageTail()
+    {
+        List<float> messageOperationParts = new List<float>();
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            messageOperationParts.Add(data[i]);
+        }
+
+        return new MessageTail(messageOperationParts.ToArray());
+    }
+
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.STRING;
@@ -57,8 +74,10 @@ public class StringMessage : IMessage<string>
 
         lastMessageId++;
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
-        
+        MessageTail messageTail = GetMessageTail();
+
         outData.AddRange(messageHeader.Bytes);
+        outData.AddRange(messageTail.Bytes);
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -66,11 +85,6 @@ public class StringMessage : IMessage<string>
         }
 
         return outData.ToArray();
-    }
-
-    public int GetHeaderSize()
-    {
-        return sizeof(float) + sizeof(int) + sizeof(float) + sizeof(int);
     }
     #endregion
 }

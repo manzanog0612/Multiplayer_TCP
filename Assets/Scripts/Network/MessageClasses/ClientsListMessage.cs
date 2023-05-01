@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[], int)>
+public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, Vector3, Color)[], int)>
 {
     #region PRIVATE_FIELDS
     private ((int, long, float, Vector3, Color)[] initialDatas, int id) data;
@@ -23,7 +23,7 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
     {
         List<(int, long, float, Vector3, Color)> outData = new List<(int, long, float, Vector3, Color)>();
 
-        short messageStartIndex = (short)GetHeaderSize();
+        short messageStartIndex = (short)(GetHeaderSize() + GetTailSize());
         List<byte> bytes = new List<byte>();
         short idBytes = sizeof(int);
 
@@ -40,7 +40,7 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         short item4Size = sizeof(float) * 3;
         short item5Size = sizeof(float) * 4;
         short totalItemSize = (short)(item1Size + item2Size + item3Size + item4Size + item5Size);
-        messageStartIndex = (short)(GetHeaderSize() + sizeof(int));
+        messageStartIndex = (short)(messageStartIndex + sizeof(int));
 
         List<byte> GetClientBytes(int i, short size, short itemTotalOffset)
         {
@@ -93,6 +93,34 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         return new MessageHeader((int)GetMessageType());
     }
 
+    public int GetHeaderSize()
+    {
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
+    }
+
+    public override MessageTail GetMessageTail()
+    {
+        List<float> messageOperationParts = new List<float>();
+
+        messageOperationParts.Add(data.id);
+
+        for (int i = 0; i < data.initialDatas.Length; i++)
+        {
+            messageOperationParts.Add(data.initialDatas[i].Item1);
+            messageOperationParts.Add(data.initialDatas[i].Item2);
+            messageOperationParts.Add(data.initialDatas[i].Item3);
+            messageOperationParts.Add(data.initialDatas[i].Item4.x);
+            messageOperationParts.Add(data.initialDatas[i].Item4.y);
+            messageOperationParts.Add(data.initialDatas[i].Item4.z);
+            messageOperationParts.Add(data.initialDatas[i].Item5.r);
+            messageOperationParts.Add(data.initialDatas[i].Item5.g);
+            messageOperationParts.Add(data.initialDatas[i].Item5.b);
+            messageOperationParts.Add(data.initialDatas[i].Item5.a);
+        }
+
+        return new MessageTail(messageOperationParts.ToArray());
+    }
+
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.CLIENTS_LIST;
@@ -103,8 +131,11 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         List<byte> outData = new List<byte>();
 
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
+        MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
+        outData.AddRange(messageTail.Bytes);
+
         outData.AddRange(BitConverter.GetBytes(data.id));
 
         for (int i = 0; i < data.initialDatas.Length; i++)
@@ -122,11 +153,6 @@ public class ClientsListMessage : IMessage<((int, long, float, Vector3, Color)[]
         }
 
         return outData.ToArray();
-    }
-
-    public int GetHeaderSize()
-    {
-        return sizeof(float) + sizeof(int);
     }
     #endregion
 }

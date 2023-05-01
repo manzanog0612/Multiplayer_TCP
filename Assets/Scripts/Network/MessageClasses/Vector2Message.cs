@@ -57,7 +57,7 @@ public class Vector2Message : IMessage<Vector2>
 
     public int GetHeaderSize()
     {
-        return sizeof(float) + sizeof(int) + sizeof(float) + sizeof(int);
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
     }
     #endregion
 }

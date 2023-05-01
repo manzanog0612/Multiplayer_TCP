@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+
 using UnityEngine;
 
-public class HandShakeMessage : IMessage<(long, int, Color)>
+public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
 {
     #region PRIVATE_FIELDS
     private (long, int, Color) data;
@@ -22,12 +23,14 @@ public class HandShakeMessage : IMessage<(long, int, Color)>
     {
         (long, int, Color) outData;
 
-        outData.Item1 = BitConverter.ToInt64(message, GetHeaderSize());
-        outData.Item2 = BitConverter.ToInt32(message, GetHeaderSize() + sizeof(long));
-        outData.Item3.r = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int));
-        outData.Item3.g = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int) + sizeof(float));
-        outData.Item3.b = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int) + sizeof(float) * 2);
-        outData.Item3.a = BitConverter.ToSingle(message, GetHeaderSize() + sizeof(long) + sizeof(int) + sizeof(float) * 3);
+        int messageStart = GetHeaderSize() + GetTailSize();
+
+        outData.Item1 = BitConverter.ToInt64(message, messageStart);
+        outData.Item2 = BitConverter.ToInt32(message, messageStart + sizeof(long));
+        outData.Item3.r = BitConverter.ToSingle(message, messageStart + sizeof(long) + sizeof(int));
+        outData.Item3.g = BitConverter.ToSingle(message, messageStart + sizeof(long) + sizeof(int) + sizeof(float));
+        outData.Item3.b = BitConverter.ToSingle(message, messageStart + sizeof(long) + sizeof(int) + sizeof(float) * 2);
+        outData.Item3.a = BitConverter.ToSingle(message, messageStart + sizeof(long) + sizeof(int) + sizeof(float) * 3);
 
         return outData;
     }
@@ -42,13 +45,34 @@ public class HandShakeMessage : IMessage<(long, int, Color)>
         return MESSAGE_TYPE.HAND_SHAKE;
     }
 
+    public int GetHeaderSize()
+    {
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
+    }
+
+    public override MessageTail GetMessageTail()
+    {
+        List<float> messageOperationParts = new List<float>();
+
+        messageOperationParts.Add(data.Item1);
+        messageOperationParts.Add(data.Item2);
+        messageOperationParts.Add(data.Item3.r);
+        messageOperationParts.Add(data.Item3.g);
+        messageOperationParts.Add(data.Item3.b);
+        messageOperationParts.Add(data.Item3.a);
+
+        return new MessageTail(messageOperationParts.ToArray());
+    }
+
     public byte[] Serialize(float admissionTime)
     {
         List<byte> outData = new List<byte>();
 
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
+        MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
+        outData.AddRange(messageTail.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(data.Item1));
         outData.AddRange(BitConverter.GetBytes(data.Item2));
@@ -58,11 +82,6 @@ public class HandShakeMessage : IMessage<(long, int, Color)>
         outData.AddRange(BitConverter.GetBytes(data.Item3.a));
 
         return outData.ToArray();
-    }
-
-    public int GetHeaderSize()
-    {
-        return sizeof(float) + sizeof(int) + sizeof(float);
     }
     #endregion
 }

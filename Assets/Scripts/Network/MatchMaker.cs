@@ -1,20 +1,12 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-
-using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-public class MatchMaker : MonoBehaviour, IReceiveData
+public class MatchMaker : NetworkManager, IReceiveData
 {
     #region PRIVATE_METHODS
     private UdpConnection clientUdpConnection = null;
-    private UdpConnection serverUdpConnection = null;
-
-    private IPAddress ipAddress = null;
 
     private int serverId = 0;
 
@@ -22,6 +14,7 @@ public class MatchMaker : MonoBehaviour, IReceiveData
     private Dictionary<int, Process> processes = new Dictionary<int, Process>();
 
     private IPEndPoint lastClientIp = null;
+    private IPEndPoint lastIp = null;
     #endregion
 
     #region CONSTANTS
@@ -30,81 +23,85 @@ public class MatchMaker : MonoBehaviour, IReceiveData
     public const string ip = "127.0.0.1";
     #endregion
 
-    #region UNITY_CALLS
-#if UNITY_SERVER
-    private void Start()
+    #region PUBLIC_METHODS
+    public void Start()
     {
         ipAddress = IPAddress.Parse(ip);
 
-        //if (tcpConnection)
-        //{
-        //    StartTcpServer(ipAddress, port);
-        //}
-        //else
-        //{
-            StartUdpServer(matchMakerPort);
-        //}
+        StartUdpServer(matchMakerPort);
     }
-#endif
 
-    private void Update()
+    public override void Update()
     {
+        base.Update();
+
         clientUdpConnection?.FlushReceiveData();
-        serverUdpConnection?.FlushReceiveData();
     }
 
-    private void OnDestroy()
+    public void OnDestroy()
     {
         clientUdpConnection?.Close();
-        serverUdpConnection?.Close();
     }
-    #endregion
 
-    #region PUBLIC_METHODS
     public void StartUdpServer(int port)
     {
         clientUdpConnection = new UdpConnection(port, this);
 
         Debug.Log("Server created");
     }
-
-    public void OnReceiveData(byte[] data, IPEndPoint ip)
-    {
-        MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
-
-        switch (messageType)
-        {
-            case MESSAGE_TYPE.SERVER_DATA_UPDATE:
-                ProcessServerDataUpdate(data);
-                break;
-            case MESSAGE_TYPE.SERVER_ON:
-                ProcessServerOn(data);
-                break;
-            case MESSAGE_TYPE.CONNECT_REQUEST:
-                ProcessConnectRequest(data, ip);
-                break;
-            case MESSAGE_TYPE.ENTITY_DISCONECT:
-                ProcessEntityDisconnect(data);
-                break;
-            default:
-                break;
-        }
-    }
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    private void ProcessServerDataUpdate(byte[] data)
+    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
     {
+        base.ProcessResendData(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA);
+            return;
+        }
+
+        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+
+        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
+
+        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
+        {
+            SendData(lastSemiTcpMessages[messageTypeToResend].Item1);
+        }
+    }
+
+    protected override void ProcessServerDataUpdate(IPEndPoint ip, byte[] data)
+    {
+        base.ProcessServerDataUpdate(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            lastIp = ip;
+            SendResendDataMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE);
+            return;
+        }
+
         ServerData serverData = new ServerDataUpdateMessage().Deserialize(data);
 
-        if (servers.ContainsKey(serverData.id))            
+        if (servers.ContainsKey(serverData.id))
         {
             servers[serverData.id] = serverData;
         }
     }
 
-    private void ProcessServerOn(byte[] data)
+    protected override void ProcessServerOn(IPEndPoint ip, byte[] data)
     {
+        base.ProcessServerOn(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            lastIp = ip;
+            SendResendDataMessage(MESSAGE_TYPE.SERVER_ON);
+            return;
+        }
+
         int serverOnPort = new ServerOnMessage().Deserialize(data);
 
         ServerData server = GetServerByPort(serverOnPort);
@@ -115,9 +112,18 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         }
     }
 
-    private void ProcessConnectRequest(byte[] data, IPEndPoint ip)
+    protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
     {
-        (long server, int port) clientData = new ConnectRequestMessage().Deserialize(data); // only for log
+        base.ProcessConnectRequest(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            lastIp = ip;
+            SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST);
+            return;
+        }
+
+        (long server, int port) clientData = new ConnectRequestMessage().Deserialize(data); // only for log and security check
 
         Debug.Log("Received connection data from port " + clientData.port + ", now looking for server to send client");
 
@@ -137,8 +143,17 @@ public class MatchMaker : MonoBehaviour, IReceiveData
         }        
     }
 
-    private void ProcessEntityDisconnect(byte[] data)
+    protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
     {
+        base.ProcessEntityDisconnect(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            lastIp = ip;
+            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT);
+            return;
+        }
+
         int serverId = new RemoveEntityMessage().Deserialize(data);
 
         Debug.Log("MatchMaker received Server disconnect message for server " + serverId.ToString());
@@ -154,6 +169,13 @@ public class MatchMaker : MonoBehaviour, IReceiveData
 
             processes.Remove(serverId);
         }
+    }
+    #endregion
+
+    #region PROTECTED_METHODS
+    protected override void SendData(byte[] data)
+    {
+        clientUdpConnection.Send(data, lastIp);
     }
     #endregion
 

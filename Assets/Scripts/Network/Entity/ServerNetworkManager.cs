@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net;
+
 using UnityEngine;
 
 public class ServerNetworkManager : NetworkManager
@@ -167,8 +168,36 @@ public class ServerNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    protected override void ProcessRemoveClient(byte[] data)
+    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
     {
+        base.ProcessResendData(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA);
+            return;
+        }
+
+        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+
+        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
+
+        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
+        {
+            SendData(lastSemiTcpMessages[messageTypeToResend].Item1);
+        }
+    }
+
+    protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
+    {
+        base.ProcessEntityDisconnect(ip, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT);
+            return;
+        }
+
         int clientId = new RemoveEntityMessage().Deserialize(data);
 
         if (!clients.ContainsKey(clientId))
@@ -178,64 +207,88 @@ public class ServerNetworkManager : NetworkManager
 
         Debug.Log("Server is sending the signal to eliminate client: " + clientId.ToString());
 
-        if (IsTcpConnection)
-        {
-            TcpBroadcast(data);
-        }
-        else
-        {
-            UdpBroadcast(data); //admission time doesn't matter in this case because server was the originator
-        }
+        SendData(data);
 
         RemoveClient(clientId);
     }
 
     protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
     {
+        base.ProcessHandShake(clientConnectionData, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.HAND_SHAKE);
+            return;
+        }
+
         Debug.Log("Server is processing Handshake");
 
         (long ip, int port, Color color) message = new HandShakeMessage().Deserialize(data);
         AddClient(clientConnectionData.ip, clientId - 1, clientConnectionData.timeStamp, Vector3.zero, message.color);
         OnReceiveEvent(clientConnectionData, data, MESSAGE_TYPE.HAND_SHAKE);
 
-        if (IsTcpConnection)
-        {
-            TcpBroadcast(new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1));
-        }
-        else
-        {
-            UdpBroadcast(new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1)); //admission time doesn't matter in this case because server was the originator
-        }
+        SendClientListMessage();
     }
     #endregion
 
     #region PRIVATE_METHODS
     private void SendDataUpdate()
     {
-        ServerDataUpdateMessage serverOnMessage = new ServerDataUpdateMessage(serverData);
-        matchMakerConnection.Send(serverOnMessage.Serialize(-1));
+        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(serverData);
+        byte[] message = serverDataUpdateMessage.Serialize(-1);
+        matchMakerConnection.Send(message);
 
         Debug.Log("Send server update data to match maker");
+
+        SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, message);
     }
 
     private void SendIsOnMessage()
     {
         ServerOnMessage serverOnMessage = new ServerOnMessage(port);
-        matchMakerConnection.Send(serverOnMessage.Serialize(-1));
+        byte[] message = serverOnMessage.Serialize(-1);
+        matchMakerConnection.Send(message);
 
         Debug.Log("Send server is on message to match maker");
+
+        SaveSentMessage(MESSAGE_TYPE.SERVER_ON, message);
     }
 
     private void SendDisconnectMessage()
     {
         RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(serverData.id);
-        matchMakerConnection.Send(removeEntityMessage.Serialize(-1));
+        byte[] message = removeEntityMessage.Serialize(-1);
+        matchMakerConnection.Send(message);
 
         Debug.Log("Send server disconnect");
+
+        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, message);
+    }
+
+    private void SendClientListMessage()
+    {
+        byte[] message = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1); //admission time doesn't matter in this case because server was the originator
+
+        SendData(message); 
+        
+        SaveSentMessage(MESSAGE_TYPE.CLIENTS_LIST, message);
     }
     #endregion
 
     #region AUX
+    protected override void SendData(byte[] data)
+    {
+        if (IsTcpConnection)
+        {
+            TcpBroadcast(data);
+        }
+        else
+        {
+            UdpBroadcast(data);
+        }
+    }
+
     protected override void OnReceiveEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
     {
         if (!ipToId.ContainsKey(clientConnectionData))

@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using UnityEditor;
 
 public class DataHandler : MonoBehaviourSingleton<DataHandler>
 {
@@ -32,7 +33,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
     #endregion
 
     #region PUBLIC_METHODS
-    public void OnReceiveDataEvent(byte[] data, IPEndPoint ip, int clientId)
+    public void OnReceiveDataEvent(byte[] data, IPEndPoint ip, int clientId, MESSAGE_TYPE messageType)
     {
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(clientId);
 
