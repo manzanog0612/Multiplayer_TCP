@@ -23,7 +23,7 @@ public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
     {
         (long, int, Color) outData;
 
-        int messageStart = GetHeaderSize() + GetTailSize();
+        int messageStart = GetHeaderSize();
 
         outData.Item1 = BitConverter.ToInt64(message, messageStart);
         outData.Item2 = BitConverter.ToInt32(message, messageStart + sizeof(long));
@@ -50,18 +50,24 @@ public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
     }
 
+    public int GetMessageSize()
+    {
+        // (long, int, Color)
+        return sizeof(long) + sizeof(int) + sizeof(float) * 4;
+    }
+
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
-        messageOperationParts.Add(data.Item1);
+        messageOperationParts.Add((int)data.Item1);
         messageOperationParts.Add(data.Item2);
-        messageOperationParts.Add(data.Item3.r);
-        messageOperationParts.Add(data.Item3.g);
-        messageOperationParts.Add(data.Item3.b);
-        messageOperationParts.Add(data.Item3.a);
+        messageOperationParts.Add((int)(data.Item3.r * 100));
+        messageOperationParts.Add((int)(data.Item3.g * 100));
+        messageOperationParts.Add((int)(data.Item3.b * 100));
+        messageOperationParts.Add((int)(data.Item3.a * 100));
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public byte[] Serialize(float admissionTime)
@@ -72,7 +78,6 @@ public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(data.Item1));
         outData.AddRange(BitConverter.GetBytes(data.Item2));
@@ -80,6 +85,8 @@ public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
         outData.AddRange(BitConverter.GetBytes(data.Item3.g));
         outData.AddRange(BitConverter.GetBytes(data.Item3.b));
         outData.AddRange(BitConverter.GetBytes(data.Item3.a));
+        
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

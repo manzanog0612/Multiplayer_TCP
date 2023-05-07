@@ -19,7 +19,7 @@ public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
     #region PUBLIC_METHODS
     public ServerData Deserialize(byte[] message)
     {
-        int messageStart = GetHeaderSize() + GetTailSize();
+        int messageStart = GetHeaderSize();
 
         ServerData outData = new ServerData(BitConverter.ToInt32(message, messageStart), BitConverter.ToInt32(message, messageStart + sizeof(int)), BitConverter.ToInt32(message, messageStart + sizeof(int) + sizeof(int)));
 
@@ -38,18 +38,23 @@ public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
 
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
         messageOperationParts.Add(data.id);
         messageOperationParts.Add(data.port);
         messageOperationParts.Add(data.amountPlayers);
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.SERVER_DATA_UPDATE;
+    }
+
+    public int GetMessageSize()
+    {
+        return sizeof(int) * 3;
     }
 
     public byte[] Serialize(float admissionTime)
@@ -60,11 +65,12 @@ public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(data.id));
         outData.AddRange(BitConverter.GetBytes(data.port));
         outData.AddRange(BitConverter.GetBytes(data.amountPlayers));
+        
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

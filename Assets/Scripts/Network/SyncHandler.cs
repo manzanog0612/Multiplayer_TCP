@@ -7,6 +7,7 @@ public class ConnectionTime
 {
     public int id;
     public float timeSinceLastConnection = 0;
+    public double latency = 0;
 
     public ConnectionTime(int id)
     {
@@ -37,8 +38,10 @@ public class SyncHandler : MonoBehaviour
     #region CONSTANTS
     private const int kickTime = 30;
     private const int syncTime = 2;
-    public const string serverSyncMessage = "you still here huh...";
-    public const MESSAGE_TYPE serverSyncMessageType = MESSAGE_TYPE.STRING;
+    #endregion
+
+    #region PROPERTIES
+    public double Latency = 0;
     #endregion
 
     #region UNITY_CALLS
@@ -48,9 +51,8 @@ public class SyncHandler : MonoBehaviour
         {
             NetworkManager.Instance.onDefineIsServer -= OnDefineIsServer;
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
-            NetworkManager.Instance.onReceiveServerSyncMessage -= ClearTimer;
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
-            NetworkManager.Instance.onSendData -= () => timeSinceLastDataSend = 0;
+            NetworkManager.Instance.onSync -= OnReceiveSync;
         }
     }
 
@@ -60,9 +62,8 @@ public class SyncHandler : MonoBehaviour
 
         NetworkManager.Instance.onDefineIsServer += OnDefineIsServer;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
-        NetworkManager.Instance.onReceiveServerSyncMessage += ClearTimer;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
-        NetworkManager.Instance.onSendData += () => timeSinceLastDataSend = 0;
+        NetworkManager.Instance.onSync += OnReceiveSync;
     }
 
     private void Update()
@@ -83,7 +84,7 @@ public class SyncHandler : MonoBehaviour
         {
             if (isServer)
             {
-                serverHandler.KickClient(id, false);
+                serverHandler.KickClient(id);
             }
             else
             {
@@ -124,17 +125,19 @@ public class SyncHandler : MonoBehaviour
 
     private void SendSyncEvent()
     {
+        SyncMessage syncMessage = new SyncMessage();
+
         if (isServer)
         {
-            DataHandler.Instance.SendStringMessage(serverSyncMessage);
+            DataHandler.Instance.SendData(syncMessage.Serialize(-1));
         }
         else
         {
-            playerHandler.SendSyncMessage(); // I send this because i need to send the player id
+            DataHandler.Instance.SendData(syncMessage.Serialize((NetworkManager.Instance as ClientNetworkManager).admissionTimeStamp)); // I send this because i need to send the player id
         }
     }
 
-    private void ClearTimer(int id)
+    private void OnReceiveSync(int id)
     {
         if (isServer)
         {

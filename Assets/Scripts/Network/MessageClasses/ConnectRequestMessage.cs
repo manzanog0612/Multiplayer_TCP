@@ -21,7 +21,7 @@ public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
     {
         (long, int) outData;
 
-        int messageStart = GetHeaderSize() + GetTailSize();
+        int messageStart = GetHeaderSize();
 
         outData.Item1 = BitConverter.ToInt64(message, messageStart);
         outData.Item2 = BitConverter.ToInt32(message, messageStart + sizeof(long));
@@ -41,17 +41,22 @@ public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
 
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
-        messageOperationParts.Add(data.Item1);
+        messageOperationParts.Add((int)data.Item1);
         messageOperationParts.Add(data.Item2);
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.CONNECT_REQUEST;
+    }
+
+    public int GetMessageSize()
+    {
+        return sizeof(long) + sizeof(int);
     }
 
     public byte[] Serialize(float admissionTime)
@@ -62,10 +67,11 @@ public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(data.Item1));
         outData.AddRange(BitConverter.GetBytes(data.Item2));
+
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

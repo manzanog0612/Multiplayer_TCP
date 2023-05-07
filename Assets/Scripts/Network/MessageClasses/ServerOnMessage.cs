@@ -19,7 +19,7 @@ public class ServerOnMessage : SemiTcpMessage, IMessage<int>
     #region PUBLIC_METHODS
     public int Deserialize(byte[] message)
     {
-        int outData = BitConverter.ToInt32(message, GetHeaderSize() + GetTailSize());
+        int outData = BitConverter.ToInt32(message, GetHeaderSize());
 
         return outData;
     }
@@ -36,16 +36,21 @@ public class ServerOnMessage : SemiTcpMessage, IMessage<int>
 
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
         messageOperationParts.Add(data);
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.SERVER_ON;
+    }
+
+    public int GetMessageSize()
+    {
+        return sizeof(int);
     }
 
     public byte[] Serialize(float admissionTime)
@@ -56,9 +61,10 @@ public class ServerOnMessage : SemiTcpMessage, IMessage<int>
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
 
         outData.AddRange(BitConverter.GetBytes(data));
+        
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

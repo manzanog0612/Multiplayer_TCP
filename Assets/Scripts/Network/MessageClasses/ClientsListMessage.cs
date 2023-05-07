@@ -23,7 +23,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
     {
         List<(int, long, float, Vector3, Color)> outData = new List<(int, long, float, Vector3, Color)>();
 
-        short messageStartIndex = (short)(GetHeaderSize() + GetTailSize());
+        short messageStartIndex = (short)GetHeaderSize();
         List<byte> bytes = new List<byte>();
         short idBytes = sizeof(int);
 
@@ -54,7 +54,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
             return clientBytes;
         }
 
-        for (int i = 0; i < (message.Length - messageStartIndex) / totalItemSize; i++)
+        for (int i = 0; i < (message.Length - messageStartIndex - GetTailSize()) / totalItemSize; i++)
         {
             List<byte> clientBytes = GetClientBytes(i, item1Size, 0);
             int item1 = BitConverter.ToInt32(clientBytes.ToArray());
@@ -100,30 +100,42 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
 
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
         messageOperationParts.Add(data.id);
 
         for (int i = 0; i < data.initialDatas.Length; i++)
         {
             messageOperationParts.Add(data.initialDatas[i].Item1);
-            messageOperationParts.Add(data.initialDatas[i].Item2);
-            messageOperationParts.Add(data.initialDatas[i].Item3);
-            messageOperationParts.Add(data.initialDatas[i].Item4.x);
-            messageOperationParts.Add(data.initialDatas[i].Item4.y);
-            messageOperationParts.Add(data.initialDatas[i].Item4.z);
-            messageOperationParts.Add(data.initialDatas[i].Item5.r);
-            messageOperationParts.Add(data.initialDatas[i].Item5.g);
-            messageOperationParts.Add(data.initialDatas[i].Item5.b);
-            messageOperationParts.Add(data.initialDatas[i].Item5.a);
+            messageOperationParts.Add((int)data.initialDatas[i].Item2);
+            messageOperationParts.Add((int)(data.initialDatas[i].Item3 * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item4.x * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item4.y * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item4.z * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item5.r * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item5.g * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item5.b * 100));
+            messageOperationParts.Add((int)(data.initialDatas[i].Item5.a * 100));
         }
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.CLIENTS_LIST;
+    }
+
+    public int GetMessageSize()
+    {
+        //((int, long, float, Vector3, Color)[], int)
+        int idSize = sizeof(int);
+        int item1Size = sizeof(int);
+        int item2Size = sizeof(long);
+        int item3Size = sizeof(float);
+        int item4Size = sizeof(float) * 3;
+        int item5Size = sizeof(float) * 4;
+        return idSize + (item1Size + item2Size + item3Size + item4Size + item5Size) * data.initialDatas.Length;
     }
 
     public byte[] Serialize(float admissionTime)
@@ -134,8 +146,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
-
+        
         outData.AddRange(BitConverter.GetBytes(data.id));
 
         for (int i = 0; i < data.initialDatas.Length; i++)
@@ -151,6 +162,8 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
             outData.AddRange(BitConverter.GetBytes(data.initialDatas[i].Item5.b));
             outData.AddRange(BitConverter.GetBytes(data.initialDatas[i].Item5.a));
         }
+
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

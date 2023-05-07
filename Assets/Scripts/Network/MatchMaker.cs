@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+
 using Debug = UnityEngine.Debug;
 
 public class MatchMaker : NetworkManager, IReceiveData
@@ -15,6 +16,8 @@ public class MatchMaker : NetworkManager, IReceiveData
 
     private IPEndPoint lastClientIp = null;
     private IPEndPoint lastIp = null;
+
+
     #endregion
 
     #region CONSTANTS
@@ -52,26 +55,6 @@ public class MatchMaker : NetworkManager, IReceiveData
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
-    {
-        base.ProcessResendData(ip, data);
-
-        if (!wasLastMessageSane)
-        {
-            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA);
-            return;
-        }
-
-        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
-
-        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
-
-        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
-        {
-            SendData(lastSemiTcpMessages[messageTypeToResend].Item1);
-        }
-    }
-
     protected override void ProcessServerDataUpdate(IPEndPoint ip, byte[] data)
     {
         base.ProcessServerDataUpdate(ip, data);
@@ -79,7 +62,7 @@ public class MatchMaker : NetworkManager, IReceiveData
         if (!wasLastMessageSane)
         {
             lastIp = ip;
-            SendResendDataMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE);
+            SendResendDataMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, ip);
             return;
         }
 
@@ -98,7 +81,7 @@ public class MatchMaker : NetworkManager, IReceiveData
         if (!wasLastMessageSane)
         {
             lastIp = ip;
-            SendResendDataMessage(MESSAGE_TYPE.SERVER_ON);
+            SendResendDataMessage(MESSAGE_TYPE.SERVER_ON, ip);
             return;
         }
 
@@ -119,7 +102,7 @@ public class MatchMaker : NetworkManager, IReceiveData
         if (!wasLastMessageSane)
         {
             lastIp = ip;
-            SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST);
+            SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST, ip);
             return;
         }
 
@@ -150,7 +133,7 @@ public class MatchMaker : NetworkManager, IReceiveData
         if (!wasLastMessageSane)
         {
             lastIp = ip;
-            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT);
+            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT, ip);
             return;
         }
 
@@ -216,7 +199,14 @@ public class MatchMaker : NetworkManager, IReceiveData
         {
             if (server.Value.amountPlayers < amountPlayersPerMatch)
             {
-                return servers[server.Key];
+                if (processes[server.Value.id].HasExited)
+                {
+                    processes.Remove(server.Value.id);
+                }
+                else
+                {
+                    return servers[server.Key];
+                }
             }
         }
 

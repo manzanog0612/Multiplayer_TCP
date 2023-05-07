@@ -53,7 +53,7 @@ public class UdpConnection
         try
         {
             DataReceived dataReceived = new DataReceived();
-            dataReceived.data = connection.EndReceive(ar, ref dataReceived.ipEndPoint);
+            dataReceived.data = connection?.EndReceive(ar, ref dataReceived.ipEndPoint);
 
             lock (handler)
             {

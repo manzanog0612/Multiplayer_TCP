@@ -19,7 +19,7 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
     #region PUBLIC_METHODS
     public MESSAGE_TYPE Deserialize(byte[] message)
     {
-        MESSAGE_TYPE outData = (MESSAGE_TYPE)BitConverter.ToInt32(message, GetHeaderSize() + GetTailSize());
+        MESSAGE_TYPE outData = (MESSAGE_TYPE)BitConverter.ToInt32(message, GetHeaderSize());
 
         return outData;
     }
@@ -36,16 +36,21 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
 
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
         messageOperationParts.Add((int)data);
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.RESEND_DATA;
+    }
+
+    public int GetMessageSize()
+    {
+        return sizeof(int);
     }
 
     public byte[] Serialize(float admissionTime)
@@ -56,9 +61,10 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
 
         outData.AddRange(BitConverter.GetBytes((int)data));
+        
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

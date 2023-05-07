@@ -59,5 +59,10 @@ public class Vector2Message : IMessage<Vector2>
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
     }
+
+    public int GetMessageSize()
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 }

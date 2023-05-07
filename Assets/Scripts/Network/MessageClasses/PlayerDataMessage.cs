@@ -44,6 +44,11 @@ public class PlayerDataMessage : IMessage<PlayerData>
         return outData;
     }
 
+    public int GetMessageSize()
+    {
+        throw new System.NotImplementedException();
+    }
+
     public MESSAGE_TYPE GetMessageType()
     {
         throw new System.NotImplementedException();

@@ -10,13 +10,10 @@ public class NetworkManager : IReceiveData
     public static NetworkManager Instance = null;
     #endregion
 
-    #region PROTECTED_FIELDS
-    protected int assignedId = 0;
+    #region PROTECTED_FIELDS   
     protected int clientId = 0;
-
-    protected double latency = 0;
     
-    protected Dictionary<MESSAGE_TYPE, (byte[], float)> lastSemiTcpMessages = new Dictionary<MESSAGE_TYPE, (byte[], float)>();
+    protected Dictionary<MESSAGE_TYPE, (byte[] data, float time)> lastSemiTcpMessages = new Dictionary<MESSAGE_TYPE, (byte[], float)>();
 
     protected bool wasLastMessageSane = true;
 
@@ -29,21 +26,21 @@ public class NetworkManager : IReceiveData
     public static int port { get; set; }
     public bool isServer { get; protected set; }
     public bool IsTcpConnection => isTcpConnection;
+    public int assignedId { get; protected set; }
     #endregion
 
     #region ACTIONS
     public Action<byte[], IPEndPoint, int, MESSAGE_TYPE> onReceiveEvent = null;
-    public Action<int> onReceiveServerSyncMessage = null;
     public Action onStartConnection = null;
     public Action<bool> onDefineIsServer = null;
     public Action<int, (long, float), Vector3, Color> onAddNewClient = null;
-    public Action onSendData = null;
     public Action<int> onRemoveClient = null;
+    public Action<int> onSync = null;
     #endregion
 
     #region CONSTANTS
     private const bool isTcpConnection = false;
-    protected const double timeTillEraseLastMessage = 33 * 5;
+    protected const double latencyMultiplier = 5;
     #endregion
 
     #region PUBLIC_METHODS
@@ -57,10 +54,16 @@ public class NetworkManager : IReceiveData
         MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
         float timeStamp = MessageFormater.GetAdmissionTime(data);
 
-        CalculateLatency(data);
+        if (isServer)
+        {
+
+        }
 
         switch (messageType)
         {
+            case MESSAGE_TYPE.SYNC:
+                ProcessSync((ip, timeStamp), data);
+                break;
             case MESSAGE_TYPE.RESEND_DATA:
                 ProcessResendData(ip, data);
                 break;
@@ -74,43 +77,26 @@ public class NetworkManager : IReceiveData
                 ProcessConnectRequest(ip, data);
                 break;
             case MESSAGE_TYPE.ENTITY_DISCONECT:
-                ProcessEntityDisconnect(ip, data);
+                ProcessEntityDisconnect(ip, data);//
                 break;
             case MESSAGE_TYPE.HAND_SHAKE:
-                ProcessHandShake((ip, timeStamp), data);
+                ProcessHandShake((ip, timeStamp), data);//
                 break;
             case MESSAGE_TYPE.CLIENTS_LIST:
                 ProcessClientList(data);
                 break;
             case MESSAGE_TYPE.STRING:
             case MESSAGE_TYPE.VECTOR3:
-                ProcessGameMessage((ip, timeStamp), data, messageType);
+                ProcessGameMessage((ip, timeStamp), data, messageType);//
                 break;
             default:
                 break;
         }
     }
 
-    public void KickClient(int id, bool closeApp = true)
+    public virtual void SendDisconnect(int id)
     {
         Debug.Log("Removing player " + id.ToString());
-        RemoveEntityMessage removeClientMessage = new RemoveEntityMessage(id);
-
-        if (!clients.ContainsKey(id))
-        {
-            return;
-        }
-
-        byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
-
-        DataHandler.Instance.SendData(data);
-
-        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data);
-
-        if (closeApp)
-        {
-            Application.Quit();
-        }
     }
     #endregion
 
@@ -143,74 +129,204 @@ public class NetworkManager : IReceiveData
         clients.Remove(id);        
     }
 
-    protected virtual void CalculateLatency(byte[] data)
+    protected double CalculateLatency(byte[] data)
     {
         (int day, int hour, int minute, int second, int millisecond) sendTime = MessageFormater.GetMessageSendTime(data);
 
         DateTime utcNow = new DateTime(2023, 5, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, DateTime.UtcNow.Second, DateTime.UtcNow.Millisecond);
         DateTime messageNow = new DateTime(2023, 5, sendTime.day, sendTime.hour, sendTime.minute, sendTime.second, sendTime.millisecond);
 
-        latency = (int)(utcNow - messageNow).TotalMilliseconds;
+        double latency = (int)(utcNow - messageNow).TotalMilliseconds;
 
         Debug.Log("L: " + latency.ToString());
+
+        return latency;
     }
 
-    protected virtual bool CheckMessageSanity(byte[] data, int headerSize, SemiTcpMessage semiTcpMessage, float op)
+    protected bool CheckMessageSanity(byte[] data, int headerSize, int messageSize, SemiTcpMessage semiTcpMessage, int op)
     {
-        MessageTail messageTail = semiTcpMessage.DeserializeTail(data, headerSize);
+        MessageTail messageTail = semiTcpMessage.DeserializeTail(data, headerSize, messageSize);
 
         return op == messageTail.messageOperationResult;
     }
 
-    protected virtual void SaveSentMessage(MESSAGE_TYPE messageType, byte[] data)
+    protected void SaveSentMessage(MESSAGE_TYPE messageType, byte[] data, double saveTime)
     {
         if (lastSemiTcpMessages.ContainsKey(messageType))
         {
-            lastSemiTcpMessages[messageType] = (data, 0);
+            lastSemiTcpMessages[messageType] = (data, (float)saveTime / 1000);
         }
         else
         {
-            lastSemiTcpMessages.Add(messageType, (data, 0));
+            lastSemiTcpMessages.Add(messageType, (data, (float)saveTime / 1000));
         }
     }
 
-    protected virtual void SendResendDataMessage(MESSAGE_TYPE messageType)
+    protected virtual void SendResendDataMessage(MESSAGE_TYPE messageType, IPEndPoint ip)
     {
-        ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
-
-        byte[] message = resendDataMessage.Serialize(-1);
-
         Debug.Log("RESENDING DATA " + (int)messageType);
-
-        SendData(message);
-
-        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, message);
     }
 
     protected virtual void SendData(byte[] data)
     {
 
     }
+    #endregion
 
     #region DATA_RECEIVE_PROCESS
-    #region AUX
-    private bool IfSyncProcess(byte[] data, MESSAGE_TYPE messageType)
+    private void a(int a)
     {
-        if (!isServer && messageType == SyncHandler.serverSyncMessageType)
+        if (!wasLastMessageSane)
         {
-            string message = new StringMessage().Deserialize(data);
-
-            if (message == SyncHandler.serverSyncMessage)
-            {
-                onReceiveServerSyncMessage?.Invoke(-1);
-                return true;
-            }
+            Debug.Log("EL MENSAJE " + a + " ESTABA INSANO");
         }
-
-        return false;
     }
 
-    protected virtual void OnReceiveEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
+    protected virtual void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
+    {
+        if (!ipToId.ContainsKey(clientConnectionData))
+        {
+            return;
+        }
+
+        int id = ipToId[clientConnectionData];
+
+        onSync?.Invoke(id);
+    }
+
+    protected virtual void ProcessResendData(IPEndPoint ip, byte[] data)
+    {
+        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+        ResendDataMessage resendDataMessage = new ResendDataMessage(messageTypeToResend);
+
+        wasLastMessageSane = CheckMessageSanity(data, resendDataMessage.GetHeaderSize(), resendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.RESEND_DATA);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA, ip);
+            return;
+        }
+
+        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
+
+        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
+        {
+            SendData(lastSemiTcpMessages[messageTypeToResend].data);
+        }
+    }
+
+    protected virtual void ProcessServerDataUpdate(IPEndPoint ip, byte[] data)
+    {
+        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(new ServerDataUpdateMessage().Deserialize(data));
+
+        wasLastMessageSane = CheckMessageSanity(data, serverDataUpdateMessage.GetHeaderSize(), serverDataUpdateMessage.GetMessageSize(), serverDataUpdateMessage, serverDataUpdateMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.SERVER_DATA_UPDATE);
+    }
+
+    protected virtual void ProcessServerOn(IPEndPoint ip, byte[] data)
+    {
+        ServerOnMessage serverOnMessage = new ServerOnMessage(new ServerOnMessage().Deserialize(data));
+
+        wasLastMessageSane = CheckMessageSanity(data, serverOnMessage.GetHeaderSize(), serverOnMessage.GetMessageSize(), serverOnMessage, serverOnMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.SERVER_ON);
+    }
+
+    protected virtual void ProcessConnectRequest(IPEndPoint ip, byte[] data) 
+    {
+        ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage(new ConnectRequestMessage().Deserialize(data));
+
+        wasLastMessageSane = CheckMessageSanity(data, connectRequestMessage.GetHeaderSize(), connectRequestMessage.GetMessageSize(), connectRequestMessage, connectRequestMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.CONNECT_REQUEST);
+    }
+    
+    protected virtual void ProcessEntityDisconnect(IPEndPoint ip, byte[] data) 
+    {
+        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(new RemoveEntityMessage().Deserialize(data));
+
+        wasLastMessageSane = CheckMessageSanity(data, removeEntityMessage.GetHeaderSize(), removeEntityMessage.GetMessageSize(), removeEntityMessage, removeEntityMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.ENTITY_DISCONECT);
+    }
+    
+    protected virtual void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
+    {
+        HandShakeMessage handShakeMessage = new HandShakeMessage(new HandShakeMessage().Deserialize(data));
+
+        wasLastMessageSane = CheckMessageSanity(data, handShakeMessage.GetHeaderSize(), handShakeMessage.GetMessageSize(), handShakeMessage, handShakeMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.HAND_SHAKE);
+    }
+    
+    protected virtual void ProcessClientList(byte[] data) 
+    {
+        ClientsListMessage clientsListMessage = new ClientsListMessage(new ClientsListMessage().Deserialize(data));
+
+        wasLastMessageSane = CheckMessageSanity(data, clientsListMessage.GetHeaderSize(), clientsListMessage.GetMessageSize(), clientsListMessage, clientsListMessage.GetMessageTail().messageOperationResult);
+        a((int)MESSAGE_TYPE.CLIENTS_LIST);
+    }
+    
+    protected virtual void ProcessGameMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
+    {
+        if (!ipToId.ContainsKey(clientConnectionData))
+        {
+            return;
+        }
+
+        Debug.Log("Received data from client " + ipToId[clientConnectionData]);
+
+        wasLastMessageSane = true;
+
+        switch (messageType)
+        {
+            case MESSAGE_TYPE.STRING:
+                StringMessage stringMessage = new StringMessage(new StringMessage().Deserialize(data));
+
+                wasLastMessageSane = CheckMessageSanity(data, stringMessage.GetHeaderSize(), stringMessage.GetMessageSize(), stringMessage, stringMessage.GetMessageTail().messageOperationResult);
+                
+                if (!wasLastMessageSane)
+                {
+                    SendResendDataMessage(MESSAGE_TYPE.STRING, clientConnectionData.ip);
+                    return;
+                }
+                else
+                {
+                    OnReceiveGameEvent(clientConnectionData, data, messageType);
+                }
+                break;
+            case MESSAGE_TYPE.VECTOR3:
+                CheckIfMessageIdIsCorrect(clientConnectionData, data, messageType);
+                break;
+            default:
+                break;
+        }
+    }
+    #endregion
+
+    #region PRIVATE_METHODS
+    private void UpdateSavedMessagesTimes()
+    {
+        Dictionary<MESSAGE_TYPE, float> lastMessageTimes = new Dictionary<MESSAGE_TYPE, float>();
+
+        foreach (var messages in lastSemiTcpMessages)
+        {
+            lastMessageTimes.Add(messages.Key, messages.Value.time - Time.deltaTime);
+        }
+
+        foreach (var messageTime in lastMessageTimes)
+        {
+            if (lastMessageTimes[messageTime.Key] < 0)
+            {
+                lastSemiTcpMessages.Remove(messageTime.Key);
+            }
+            else
+            { 
+                lastSemiTcpMessages[messageTime.Key] = (lastSemiTcpMessages[messageTime.Key].data, messageTime.Value);
+            }
+        }
+    }
+    #endregion
+
+    #region AUX
+    protected virtual void OnReceiveGameEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
     {
         if (!ipToId.ContainsKey(clientConnectionData))
         {
@@ -226,93 +342,20 @@ public class NetworkManager : IReceiveData
 
         onReceiveEvent?.Invoke(data, clientConnectionData.ip, id, messageType);
     }
-    #endregion
-
-    private void a(int a)
-    {
-        if (!wasLastMessageSane)
-        {
-            Debug.Log("EL MENSAJE " + a + " ESTABA INSANO");
-        }
-    }
-
-    protected virtual void ProcessResendData(IPEndPoint ip, byte[] data)
-    {
-        ResendDataMessage resendDataMessage = new ResendDataMessage(new ResendDataMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, resendDataMessage.GetHeaderSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.RESEND_DATA);
-    }
-
-    protected virtual void ProcessServerDataUpdate(IPEndPoint ip, byte[] data)
-    {
-        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(new ServerDataUpdateMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, serverDataUpdateMessage.GetHeaderSize(), serverDataUpdateMessage, serverDataUpdateMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.SERVER_DATA_UPDATE);
-    }
-
-    protected virtual void ProcessServerOn(IPEndPoint ip, byte[] data)
-    {
-        ServerOnMessage serverOnMessage = new ServerOnMessage(new ServerOnMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, serverOnMessage.GetHeaderSize(), serverOnMessage, serverOnMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.SERVER_ON);
-    }
-
-    protected virtual void ProcessConnectRequest(IPEndPoint ip, byte[] data) 
-    {
-        ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage(new ConnectRequestMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, connectRequestMessage.GetHeaderSize(), connectRequestMessage, connectRequestMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.CONNECT_REQUEST);
-    }
     
-    protected virtual void ProcessEntityDisconnect(IPEndPoint ip, byte[] data) 
+    private void CheckIfMessageIdIsCorrect((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
     {
-        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(new RemoveEntityMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, removeEntityMessage.GetHeaderSize(), removeEntityMessage, removeEntityMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.ENTITY_DISCONECT);
-    }
-    
-    protected virtual void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
-    {
-        HandShakeMessage handShakeMessage = new HandShakeMessage(new HandShakeMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, handShakeMessage.GetHeaderSize(), handShakeMessage, handShakeMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.HAND_SHAKE);
-    }
-    
-    protected virtual void ProcessClientList(byte[] data) 
-    {
-        ClientsListMessage clientsListMessage = new ClientsListMessage(new ClientsListMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, clientsListMessage.GetHeaderSize(), clientsListMessage, clientsListMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.CLIENTS_LIST);
-    }
-    
-    protected virtual void ProcessGameMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
-    {
-        if (IfSyncProcess(data, messageType) || !ipToId.ContainsKey(clientConnectionData))
-        {
-            return;
-        }
-
-        Debug.Log("Received data from client " + ipToId[clientConnectionData]);
+        int clientId = ipToId[clientConnectionData];
 
         int messageId = MessageFormater.GetMessageId(data);
-        int clientId = ipToId[clientConnectionData];
         Dictionary<MESSAGE_TYPE, int> lastMessagesIds = clients[clientId].lastMessagesIds;
-
-        wasLastMessageSane = true;
 
         if (lastMessagesIds.ContainsKey(messageType))
         {
             if (lastMessagesIds[messageType] <= messageId)
             {
                 lastMessagesIds[messageType] = messageId;
-                OnReceiveEvent(clientConnectionData, data, messageType);
+                OnReceiveGameEvent(clientConnectionData, data, messageType);
             }
             else
             {
@@ -323,32 +366,7 @@ public class NetworkManager : IReceiveData
         else
         {
             lastMessagesIds.Add(messageType, messageId);
-            OnReceiveEvent(clientConnectionData, data, messageType);
-        }
-    }
-    #endregion
-    #endregion
-
-    #region PRIVATE_METHODS
-    private void UpdateSavedMessagesTimes()
-    {
-        Dictionary<MESSAGE_TYPE, float> lastMessageTimes = new Dictionary<MESSAGE_TYPE, float>();
-
-        foreach (var messages in lastSemiTcpMessages)
-        {
-            lastMessageTimes.Add(messages.Key, messages.Value.Item2 + Time.deltaTime);
-        }
-
-        foreach (var messages in lastMessageTimes)
-        {
-            if (lastMessageTimes[messages.Key] > timeTillEraseLastMessage)
-            {
-                lastSemiTcpMessages.Remove(messages.Key);
-            }
-            else
-            { 
-                lastSemiTcpMessages[messages.Key] = (lastSemiTcpMessages[messages.Key].Item1, messages.Value);
-            }
+            OnReceiveGameEvent(clientConnectionData, data, messageType);
         }
     }
     #endregion

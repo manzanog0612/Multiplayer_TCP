@@ -43,8 +43,6 @@ public class MessageHeader
         bytes.AddRange(BitConverter.GetBytes(admissionTime));
 
         Bytes = bytes.ToArray();
-
-
     }
 
     public MessageHeader(int messageType)

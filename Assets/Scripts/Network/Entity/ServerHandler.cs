@@ -33,8 +33,8 @@ public class ServerHandler : MonoBehaviour
         //}
     }
 
-    public void KickClient(int id, bool closeApp = true)
+    public void KickClient(int id)
     {
-        serverNetworkManager.KickClient(id, closeApp);
+        serverNetworkManager.SendDisconnect(id);
     }
 }

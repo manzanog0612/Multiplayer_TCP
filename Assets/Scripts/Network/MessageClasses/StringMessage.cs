@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 public class StringMessage : SemiTcpMessage, IMessage<string>
 {
-    static public int lastMessageId = 0;
-
     #region PRIVATE_FIELDS
     private string data = null;
     #endregion
@@ -24,9 +22,9 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
         string outData = string.Empty;
 
         int charSize = sizeof(char);
-        int messageStartIndex = GetHeaderSize() + GetTailSize();
+        int messageStartIndex = GetHeaderSize();
 
-        for (int i = 0; i < (message.Length - messageStartIndex) / charSize; i++)
+        for (int i = 0; i < (message.Length - messageStartIndex - GetTailSize()) / charSize; i++)
         {
             List<byte> charBytes = new List<byte>();
 
@@ -43,24 +41,24 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
 
     public MessageHeader GetMessageHeader(float admissionTime)
     {
-        return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
+        return new MessageHeader((int)GetMessageType(), admissionTime);
     }
 
     public int GetHeaderSize()
     {
-        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
+        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
     }
 
     public override MessageTail GetMessageTail()
     {
-        List<float> messageOperationParts = new List<float>();
+        List<int> messageOperationParts = new List<int>();
 
         for (int i = 0; i < data.Length; i++)
         {
             messageOperationParts.Add(data[i]);
         }
 
-        return new MessageTail(messageOperationParts.ToArray());
+        return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
     public MESSAGE_TYPE GetMessageType()
@@ -68,21 +66,26 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
         return MESSAGE_TYPE.STRING;
     }
 
+    public int GetMessageSize()
+    {
+        return sizeof(char) * data.Length;
+    }
+
     public byte[] Serialize(float admissionTime)
     {
         List<byte> outData = new List<byte>();
 
-        lastMessageId++;
         MessageHeader messageHeader = GetMessageHeader(admissionTime);
         MessageTail messageTail = GetMessageTail();
 
         outData.AddRange(messageHeader.Bytes);
-        outData.AddRange(messageTail.Bytes);
 
         for (int i = 0; i < data.Length; i++)
         {
             outData.AddRange(BitConverter.GetBytes(data[i]));
         }
+        
+        outData.AddRange(messageTail.Bytes);
 
         return outData.ToArray();
     }

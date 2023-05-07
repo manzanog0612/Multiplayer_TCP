@@ -1,16 +1,19 @@
 using System.Collections.Generic;
 using System.Net;
-
 using UnityEngine;
 
 public class ServerNetworkManager : NetworkManager
 {
     #region PRIVATE_FIELDS
-    protected UdpConnection matchMakerConnection = null;
-    protected UdpConnection udpConnection = null;
-    protected TcpServerConnection tcpServerConnection = null;
+    private UdpConnection matchMakerConnection = null;
+    private UdpConnection udpConnection = null;
+    private TcpServerConnection tcpServerConnection = null;
 
     private ServerData serverData = null;
+
+    private Dictionary<int, double> clientsLatencies = new Dictionary<int, double>();
+
+    private bool debug = false;
     #endregion
 
     #region PUBLIC_METHODS
@@ -55,7 +58,7 @@ public class ServerNetworkManager : NetworkManager
 
         for (int i = 0; i < index; i++)
         {
-            KickClient(clientsIds[i], false);
+            SendDisconnect(clientsIds[i]);
         }
 
         udpConnection?.Close();
@@ -76,9 +79,12 @@ public class ServerNetworkManager : NetworkManager
 
         Debug.Log("Server created on port " + port.ToString());
 
-        matchMakerConnection = new UdpConnection(IPAddress.Parse(MatchMaker.ip), MatchMaker.matchMakerPort);
+        if (!debug)
+        {
+            matchMakerConnection = new UdpConnection(IPAddress.Parse(MatchMaker.ip), MatchMaker.matchMakerPort);
 
-        SendIsOnMessage();
+            SendIsOnMessage();
+        }
 
         Application.quitting += ShutDownUdpServer;
     }
@@ -97,8 +103,11 @@ public class ServerNetworkManager : NetworkManager
                 udpConnection.Send(data, iterator.Current.Value.ipEndPoint);
             }
         }
+    }
 
-        onSendData?.Invoke();
+    public void SendToSpecificClient(byte[] data, IPEndPoint ip)
+    {
+        udpConnection.Send(data, ip);
     }
     #endregion
 
@@ -162,121 +171,15 @@ public class ServerNetworkManager : NetworkManager
             return;
         }
 
+        if (clientsLatencies.ContainsKey(id))
+        {
+            clientsLatencies.Remove(id);
+        }
+
         serverData.amountPlayers--;
         SendDataUpdate();
     }
-    #endregion
 
-    #region DATA_RECEIVE_PROCESS
-    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
-    {
-        base.ProcessResendData(ip, data);
-
-        if (!wasLastMessageSane)
-        {
-            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA);
-            return;
-        }
-
-        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
-
-        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
-
-        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
-        {
-            SendData(lastSemiTcpMessages[messageTypeToResend].Item1);
-        }
-    }
-
-    protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
-    {
-        base.ProcessEntityDisconnect(ip, data);
-
-        if (!wasLastMessageSane)
-        {
-            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT);
-            return;
-        }
-
-        int clientId = new RemoveEntityMessage().Deserialize(data);
-
-        if (!clients.ContainsKey(clientId))
-        {
-            return;
-        }
-
-        Debug.Log("Server is sending the signal to eliminate client: " + clientId.ToString());
-
-        SendData(data);
-
-        RemoveClient(clientId);
-    }
-
-    protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
-    {
-        base.ProcessHandShake(clientConnectionData, data);
-
-        if (!wasLastMessageSane)
-        {
-            SendResendDataMessage(MESSAGE_TYPE.HAND_SHAKE);
-            return;
-        }
-
-        Debug.Log("Server is processing Handshake");
-
-        (long ip, int port, Color color) message = new HandShakeMessage().Deserialize(data);
-        AddClient(clientConnectionData.ip, clientId - 1, clientConnectionData.timeStamp, Vector3.zero, message.color);
-        OnReceiveEvent(clientConnectionData, data, MESSAGE_TYPE.HAND_SHAKE);
-
-        SendClientListMessage();
-    }
-    #endregion
-
-    #region PRIVATE_METHODS
-    private void SendDataUpdate()
-    {
-        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(serverData);
-        byte[] message = serverDataUpdateMessage.Serialize(-1);
-        matchMakerConnection.Send(message);
-
-        Debug.Log("Send server update data to match maker");
-
-        SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, message);
-    }
-
-    private void SendIsOnMessage()
-    {
-        ServerOnMessage serverOnMessage = new ServerOnMessage(port);
-        byte[] message = serverOnMessage.Serialize(-1);
-        matchMakerConnection.Send(message);
-
-        Debug.Log("Send server is on message to match maker");
-
-        SaveSentMessage(MESSAGE_TYPE.SERVER_ON, message);
-    }
-
-    private void SendDisconnectMessage()
-    {
-        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(serverData.id);
-        byte[] message = removeEntityMessage.Serialize(-1);
-        matchMakerConnection.Send(message);
-
-        Debug.Log("Send server disconnect");
-
-        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, message);
-    }
-
-    private void SendClientListMessage()
-    {
-        byte[] message = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1); //admission time doesn't matter in this case because server was the originator
-
-        SendData(message); 
-        
-        SaveSentMessage(MESSAGE_TYPE.CLIENTS_LIST, message);
-    }
-    #endregion
-
-    #region AUX
     protected override void SendData(byte[] data)
     {
         if (IsTcpConnection)
@@ -289,26 +192,200 @@ public class ServerNetworkManager : NetworkManager
         }
     }
 
-    protected override void OnReceiveEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
+    protected override void OnReceiveGameEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
     {
         if (!ipToId.ContainsKey(clientConnectionData))
         {
             return;
         }
 
-        base.OnReceiveEvent(clientConnectionData, data, messageType);
-        
+        base.OnReceiveGameEvent(clientConnectionData, data, messageType);
+
+        SendData(data);
+
+        if (messageType == MESSAGE_TYPE.STRING)
+        {
+            SaveSentMessage(MESSAGE_TYPE.STRING, data, GetBiggerLatency() * latencyMultiplier);
+        }
+    }
+    #endregion
+
+    #region DATA_RECEIVE_PROCESS
+    protected override void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
+    {
+        if (!ipToId.ContainsKey(clientConnectionData))
+        {
+            return;
+        }
+
         int id = ipToId[clientConnectionData];
 
-        onReceiveServerSyncMessage?.Invoke(id);
+        UpdateClientLatency(id, CalculateLatency(data));
+    }
 
-        if (IsTcpConnection)
+    protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
+    {
+        base.ProcessEntityDisconnect(ip, data);
+
+        if (!HandleMessageSanity(ip, data, MESSAGE_TYPE.ENTITY_DISCONECT))
         {
-            TcpBroadcast(data);
+            return;
+        }
+
+        int clientId = new RemoveEntityMessage().Deserialize(data);
+
+        if (!clients.ContainsKey(clientId))
+        {
+            return;
+        }
+
+        Debug.Log("Server is sending the signal to eliminate client: " + clientId.ToString());
+
+        RemoveClient(clientId);
+    }
+
+    protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
+    {
+        base.ProcessHandShake(clientConnectionData, data);
+
+        if (!HandleMessageSanity(clientConnectionData.ip, data, MESSAGE_TYPE.HAND_SHAKE))
+        {
+            return;
+        }
+
+        Debug.Log("Server is processing Handshake");
+
+        (long ip, int port, Color color) message = new HandShakeMessage().Deserialize(data);
+        AddClient(clientConnectionData.ip, clientId - 1, clientConnectionData.timeStamp, Vector3.zero, message.color);
+       
+        SendClientListMessage();
+    }
+    #endregion
+
+    #region SEND_DATA_METHODS
+    protected override void SendResendDataMessage(MESSAGE_TYPE messageType, IPEndPoint ip)
+    {
+        base.SendResendDataMessage(messageType, ip);
+
+        ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
+
+        byte[] message = resendDataMessage.Serialize(-1);
+
+        SendToSpecificClient(message, ip);
+
+        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, message, GetBiggerLatency() * latencyMultiplier);
+    }
+
+    public override void SendDisconnect(int id)
+    {
+        base.SendDisconnect(id);
+
+        RemoveEntityMessage removeClientMessage = new RemoveEntityMessage(id);
+
+        if (!clients.ContainsKey(id))
+        {
+            return;
+        }
+
+        byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
+
+        SendData(data);
+
+        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency());
+    }
+
+    private void SendDataUpdate()
+    {
+        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(serverData);
+        byte[] message = serverDataUpdateMessage.Serialize(-1);
+        if (!debug)
+        {
+            matchMakerConnection.Send(message);
+
+            Debug.Log("Send server update data to match maker");
+
+            SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, message, GetBiggerLatency() * latencyMultiplier);
+        }
+    }
+
+    private void SendIsOnMessage()
+    {
+        ServerOnMessage serverOnMessage = new ServerOnMessage(port);
+        byte[] message = serverOnMessage.Serialize(-1);
+        if (!debug)
+        {
+            matchMakerConnection.Send(message);
+
+            Debug.Log("Send server is on message to match maker");
+
+            SaveSentMessage(MESSAGE_TYPE.SERVER_ON, message, GetBiggerLatency() * latencyMultiplier);
+        }
+    }
+
+    private void SendDisconnectMessage()
+    {
+        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(serverData.id);
+        byte[] message = removeEntityMessage.Serialize(-1);
+        if (!debug)
+        {
+            matchMakerConnection.Send(message);
+
+            Debug.Log("Send server disconnect");
+
+            SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, message, GetBiggerLatency() * latencyMultiplier);
+        }
+    }
+
+    private void SendClientListMessage()
+    {
+        byte[] message = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1); //admission time doesn't matter in this case because server was the originator
+
+        SendData(message); 
+        
+        SaveSentMessage(MESSAGE_TYPE.CLIENTS_LIST, message, GetBiggerLatency() * latencyMultiplier);
+    }
+    #endregion
+
+    #region AUX
+    private bool HandleMessageSanity(IPEndPoint ip, byte[] data, MESSAGE_TYPE messageType)
+    {
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(messageType, ip);
         }
         else
         {
-            UdpBroadcast(data);
+            SendData(data);
+            SaveSentMessage(messageType, data, GetBiggerLatency() * latencyMultiplier);
+        }
+
+        return wasLastMessageSane;
+    }
+
+    private double GetBiggerLatency()
+    {
+        double latency = 0;
+
+        foreach (var clientLatency in clientsLatencies)
+        {
+            if (clientLatency.Value > latency)
+            {
+                latency = clientLatency.Value;
+            }
+        }
+
+        return latency;
+    }
+
+    private void UpdateClientLatency(int id, double latency)
+    {
+        if (clientsLatencies.ContainsKey(id))
+        {
+            clientsLatencies[id] = latency;
+        }
+        else
+        {
+            clientsLatencies.Add(id, latency);
         }
     }
 

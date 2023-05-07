@@ -1,4 +1,3 @@
-using System;
 using System.Net;
 
 using UnityEngine;
@@ -6,8 +5,10 @@ using UnityEngine;
 public class ClientNetworkManager : NetworkManager
 {
     #region PRIVATE_FIELDS
-    protected UdpConnection udpConnection = null;
-    protected TcpClientConnection tcpClientConnection = null;
+    private UdpConnection udpConnection = null;
+    private TcpClientConnection tcpClientConnection = null;
+
+    private double latency = 20;
     #endregion
 
     #region PROPERTIES
@@ -26,7 +27,7 @@ public class ClientNetworkManager : NetworkManager
     public void DisconectClient()
     {
         Debug.Log("This player is going to be eliminated");
-        KickClient(assignedId, true);
+        SendDisconnect(assignedId);
     }
 
     #region UDP
@@ -50,8 +51,6 @@ public class ClientNetworkManager : NetworkManager
     public void SendToUdpServer(byte[] data)
     {
         udpConnection?.Send(data);
-
-        onSendData?.Invoke();
     }
     #endregion
 
@@ -90,24 +89,14 @@ public class ClientNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
+    protected override void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
     {
-        base.ProcessResendData(ip, data);
-
-        if (!wasLastMessageSane)
+        if (!ipToId.ContainsKey(clientConnectionData))
         {
-            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA);
             return;
         }
 
-        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
-
-        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
-
-        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
-        {
-            SendData(lastSemiTcpMessages[messageTypeToResend].Item1);
-        }
+        latency = CalculateLatency(data);
     }
 
     protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
@@ -116,7 +105,7 @@ public class ClientNetworkManager : NetworkManager
 
         if (!wasLastMessageSane)
         {
-            SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST);
+            SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST, ip);
             return;
         }
 
@@ -141,7 +130,7 @@ public class ClientNetworkManager : NetworkManager
 
         if (!wasLastMessageSane)
         {
-            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT);
+            SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT, ip);
             return;
         }
 
@@ -169,7 +158,7 @@ public class ClientNetworkManager : NetworkManager
 
         if (!wasLastMessageSane)
         {
-            SendResendDataMessage(MESSAGE_TYPE.CLIENTS_LIST);
+            SendResendDataMessage(MESSAGE_TYPE.CLIENTS_LIST, null);
             return;
         }
 
@@ -188,7 +177,52 @@ public class ClientNetworkManager : NetworkManager
     }
     #endregion
 
-    #region PRIVATE_METHODS
+    #region SEND_DATA_METHODS
+    public void SendPlayerMessageMessage(PlayerData playerData) //esto es horrible pero es para handlear lo que ya tenía, no tengo tiempo para arreglar arq ahora
+    {
+        PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
+        byte[] message = playerDataMessage.Serialize(admissionTimeStamp);
+        SendData(message);
+
+        MESSAGE_TYPE messageType = MessageFormater.GetMessageType(message);
+
+        if (messageType == MESSAGE_TYPE.STRING)
+        {
+            SaveSentMessage(messageType, message, latency * latencyMultiplier);
+        }
+    }
+
+    protected override void SendResendDataMessage(MESSAGE_TYPE messageType, IPEndPoint ip)
+    {
+        base.SendResendDataMessage(messageType, ip);
+
+        ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
+
+        byte[] message = resendDataMessage.Serialize(-1);
+
+        SendData(message);
+
+        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, message, latency * latencyMultiplier);
+    }
+
+    public override void SendDisconnect(int id)
+    {
+        base.SendDisconnect(id);
+
+        RemoveEntityMessage removeClientMessage = new RemoveEntityMessage(id);
+
+        if (!clients.ContainsKey(id))
+        {
+            return;
+        }
+
+        byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
+
+        SendData(data);
+
+        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, latency * latencyMultiplier);
+    }
+
     private void SendConnectRequest()
     {
         IPEndPoint client = new IPEndPoint(ipAddress, port);
@@ -198,7 +232,7 @@ public class ClientNetworkManager : NetworkManager
 
         SendData(message);
 
-        SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, message);
+        SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, message, latency * latencyMultiplier);
     }
 
     private void SendHandShake()
@@ -212,7 +246,7 @@ public class ClientNetworkManager : NetworkManager
 
         SendData(message);
 
-        SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, message);
+        SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, message, latency * latencyMultiplier);
     }
     #endregion
 

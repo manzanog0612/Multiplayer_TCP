@@ -16,7 +16,7 @@ public class PlayerHandler : MonoBehaviour
 
     #region ACTIONS
     private Action<PlayerData> onChangePlayerData = null;
-    #endregion    
+    #endregion
 
     #region UNITY_CALLS
     public void Update()
@@ -45,12 +45,6 @@ public class PlayerHandler : MonoBehaviour
     public void SendChat(string message)
     {
         playerData.message = message;
-        onChangePlayerData.Invoke(playerData);
-    }
-
-    public void SendSyncMessage()
-    {
-        playerData.movement = Vector3.zero;
         onChangePlayerData.Invoke(playerData);
     }
     #endregion

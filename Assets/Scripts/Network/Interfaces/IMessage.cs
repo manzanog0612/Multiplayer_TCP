@@ -1,6 +1,7 @@
 public enum MESSAGE_TYPE
 {
-    RESEND_DATA = -7,
+    SYNC = -8,
+    RESEND_DATA,
     SERVER_DATA_UPDATE,
     SERVER_ON,
     CONNECT_REQUEST,
@@ -23,4 +24,6 @@ public interface IMessage<T>
     public byte[] Serialize(float admissionTime);
 
     public int GetHeaderSize();
+
+    public int GetMessageSize();
 }

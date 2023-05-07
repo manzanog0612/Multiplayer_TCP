@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using Unity.VisualScripting;
 using UnityEditor;
 
 public class DataHandler : MonoBehaviourSingleton<DataHandler>
@@ -42,16 +43,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
 
     public void SendPlayerData(PlayerData playerData)
     {
-        PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
-        byte[] message = playerDataMessage.Serialize((NetworkManager.Instance as ClientNetworkManager).admissionTimeStamp);
-        SendData(message);
-    }
-
-    public void SendStringMessage(string chat)
-    {
-        StringMessage stringMessage = new StringMessage(chat);
-        byte[] message = stringMessage.Serialize(-1);
-        SendData(message);
+        (NetworkManager.Instance as ClientNetworkManager).SendPlayerMessageMessage(playerData);
     }
 
     public void SendData(byte[] message)
