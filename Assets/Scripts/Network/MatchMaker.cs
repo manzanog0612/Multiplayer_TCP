@@ -15,15 +15,16 @@ public class MatchMaker : NetworkManager, IReceiveData
     private Dictionary<int, Process> processes = new Dictionary<int, Process>();
 
     private IPEndPoint lastClientIp = null;
-    private IPEndPoint lastIp = null;
 
-
+    private bool aaaaa = false;
+    private bool bbbbb = false;
     #endregion
 
     #region CONSTANTS
     public const int matchMakerPort = 8053;
     public const int amountPlayersPerMatch = 2;
     public const string ip = "127.0.0.1";
+    private int minimunSaveTime = 20;
     #endregion
 
     #region PUBLIC_METHODS
@@ -55,13 +56,37 @@ public class MatchMaker : NetworkManager, IReceiveData
     #endregion
 
     #region DATA_RECEIVE_PROCESS
+    protected override void ProcessResendData(IPEndPoint ip, byte[] data)
+    {
+        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+        ResendDataMessage resendDataMessage = new ResendDataMessage(messageTypeToResend);
+
+        wasLastMessageSane = CheckMessageSanity(data, resendDataMessage.GetHeaderSize(), resendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.RESEND_DATA, ip);
+            return;
+        }
+
+        Debug.Log("Received the sign to resend data " + (int)messageTypeToResend);
+
+        if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
+        {
+            clientUdpConnection.Send(lastSemiTcpMessages[messageTypeToResend].data, ip);
+        }
+        else
+        {
+            Debug.Log("There wasn't data of message type " + (int)messageTypeToResend);
+        }
+    }
+
     protected override void ProcessServerDataUpdate(IPEndPoint ip, byte[] data)
     {
         base.ProcessServerDataUpdate(ip, data);
 
         if (!wasLastMessageSane)
         {
-            lastIp = ip;
             SendResendDataMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, ip);
             return;
         }
@@ -80,7 +105,6 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         if (!wasLastMessageSane)
         {
-            lastIp = ip;
             SendResendDataMessage(MESSAGE_TYPE.SERVER_ON, ip);
             return;
         }
@@ -101,7 +125,6 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         if (!wasLastMessageSane)
         {
-            lastIp = ip;
             SendResendDataMessage(MESSAGE_TYPE.CONNECT_REQUEST, ip);
             return;
         }
@@ -132,7 +155,6 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         if (!wasLastMessageSane)
         {
-            lastIp = ip;
             SendResendDataMessage(MESSAGE_TYPE.ENTITY_DISCONECT, ip);
             return;
         }
@@ -155,23 +177,75 @@ public class MatchMaker : NetworkManager, IReceiveData
     }
     #endregion
 
-    #region PROTECTED_METHODS
-    protected override void SendData(byte[] data)
+    #region SEND_DATA_METHODS
+    protected override void SendResendDataMessage(MESSAGE_TYPE messageType, IPEndPoint ip)
     {
-        clientUdpConnection.Send(data, lastIp);
-    }
-    #endregion
+        base.SendResendDataMessage(messageType, ip);
 
-    #region PRIVATE_METHODS
+        ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
+
+        byte[] data = resendDataMessage.Serialize(-1);
+
+        //clientUdpConnection.Send(data, ip);
+
+        double latency = CalculateLatency(data);
+
+        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, latency < minimunSaveTime ? minimunSaveTime : latency * latencyMultiplier);
+
+        if (aaaaa)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 10] -= 1;
+            aaaaa = false;
+            clientUdpConnection.Send(data2, ip);
+        }
+        else
+        {
+            clientUdpConnection.Send(data, ip);
+        }
+    }
+
     private void SendConnectDataToClient(ServerData availableServer)
     {
         Debug.Log("Sending connection data to client");
 
         ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage((ipAddress.Address, availableServer.port));
 
-        clientUdpConnection.Send(connectRequestMessage.Serialize(-1), lastClientIp);
-    }
+        byte[] data = connectRequestMessage.Serialize(-1);
 
+        //clientUdpConnection.Send(data, lastClientIp);
+
+        double latency = CalculateLatency(data);
+
+        SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, data, latency < minimunSaveTime ? minimunSaveTime : latency * latencyMultiplier);
+
+        if (bbbbb)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 10] -= 1;
+            bbbbb = false;
+            clientUdpConnection.Send(data2, lastClientIp);
+        }
+        else
+        {
+            clientUdpConnection.Send(data, lastClientIp);
+        }
+    }
+    #endregion
+
+    #region PRIVATE_METHODS
     private ServerData RunNewServer()
     {
         int port = GetAvailablePort();
@@ -191,6 +265,7 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         return server;
     }
+    #endregion
 
     #region AUX
     private ServerData GetAvailableServer()
@@ -239,6 +314,5 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         return null;
     }
-    #endregion
     #endregion
 }

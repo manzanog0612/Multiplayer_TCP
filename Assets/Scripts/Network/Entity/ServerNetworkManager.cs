@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net;
+
 using UnityEngine;
 
 public class ServerNetworkManager : NetworkManager
@@ -13,7 +14,14 @@ public class ServerNetworkManager : NetworkManager
 
     private Dictionary<int, double> clientsLatencies = new Dictionary<int, double>();
 
-    private bool debug = false;
+    private bool debug = true;
+
+    private bool aaaaa = false;
+    private bool bbbbb = false;
+    private bool ccccc = false;
+    private bool ddddd = false;
+    private bool eeeee = false;
+    private bool fffff = false;
     #endregion
 
     #region PUBLIC_METHODS
@@ -40,6 +48,7 @@ public class ServerNetworkManager : NetworkManager
         base.Update();
 
         udpConnection?.FlushReceiveData();
+        matchMakerConnection?.FlushReceiveData();
         tcpServerConnection?.FlushReceiveData();
     }
 
@@ -213,6 +222,8 @@ public class ServerNetworkManager : NetworkManager
     #region DATA_RECEIVE_PROCESS
     protected override void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
     {
+        base.ProcessSync(clientConnectionData, data);
+
         if (!ipToId.ContainsKey(clientConnectionData))
         {
             return;
@@ -258,7 +269,7 @@ public class ServerNetworkManager : NetworkManager
         (long ip, int port, Color color) message = new HandShakeMessage().Deserialize(data);
         AddClient(clientConnectionData.ip, clientId - 1, clientConnectionData.timeStamp, Vector3.zero, message.color);
        
-        SendClientListMessage();
+        SendClientListMessage(clientConnectionData.ip);
     }
     #endregion
 
@@ -269,11 +280,43 @@ public class ServerNetworkManager : NetworkManager
 
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
 
-        byte[] message = resendDataMessage.Serialize(-1);
+        byte[] data = resendDataMessage.Serialize(-1);
+        
+        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, GetBiggerLatency() * latencyMultiplier);
 
-        SendToSpecificClient(message, ip);
+        if (aaaaa)
+        {
+            byte[] data2 = new byte[data.Length];
 
-        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, message, GetBiggerLatency() * latencyMultiplier);
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 5] -= 1;
+            aaaaa = false;
+            if (messageType == MESSAGE_TYPE.SERVER_ON || messageType == MESSAGE_TYPE.SERVER_DATA_UPDATE)
+            {
+                matchMakerConnection.Send(data2);
+            }
+            else
+            {
+                SendToSpecificClient(data2, ip);
+            }
+        }
+        else
+        {
+            if (messageType == MESSAGE_TYPE.SERVER_ON || messageType == MESSAGE_TYPE.SERVER_DATA_UPDATE)
+            {
+                matchMakerConnection.Send(data);
+            }
+            else
+            {
+                SendToSpecificClient(data, ip);
+            }
+        }
+
+        //SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, GetBiggerLatency() * latencyMultiplier);
     }
 
     public override void SendDisconnect(int id)
@@ -289,60 +332,152 @@ public class ServerNetworkManager : NetworkManager
 
         byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
 
-        SendData(data);
+        //SendData(data);
 
-        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency());
+        SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency() * latencyMultiplier);
+
+        if (bbbbb)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 5] -= 1;
+            bbbbb = false;
+            SendData(data2);
+        }
+        else
+        {
+            SendData(data);
+        }
+
+        RemoveClient(id);
     }
 
     private void SendDataUpdate()
     {
         ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(serverData);
-        byte[] message = serverDataUpdateMessage.Serialize(-1);
+        byte[] data = serverDataUpdateMessage.Serialize(-1);
         if (!debug)
         {
-            matchMakerConnection.Send(message);
+            //matchMakerConnection.Send(data);
 
             Debug.Log("Send server update data to match maker");
 
-            SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, message, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, data, GetBiggerLatency() * latencyMultiplier);
+
+            if (ccccc)
+            {
+                byte[] data2 = new byte[data.Length];
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data2[i] = data[i];
+                }
+
+                data2[data.Length - 5] -= 1;
+                ccccc = false;
+                matchMakerConnection.Send(data2);
+            }
+            else
+            {
+                matchMakerConnection.Send(data);
+            }
         }
     }
 
     private void SendIsOnMessage()
     {
         ServerOnMessage serverOnMessage = new ServerOnMessage(port);
-        byte[] message = serverOnMessage.Serialize(-1);
+        byte[] data = serverOnMessage.Serialize(-1);
         if (!debug)
         {
-            matchMakerConnection.Send(message);
+            //matchMakerConnection.Send(data);
 
             Debug.Log("Send server is on message to match maker");
 
-            SaveSentMessage(MESSAGE_TYPE.SERVER_ON, message, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage(MESSAGE_TYPE.SERVER_ON, data, GetBiggerLatency() * latencyMultiplier);
+
+            if (ddddd)
+            {
+                byte[] data2 = new byte[data.Length];
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data2[i] = data[i];
+                }
+
+                data2[data.Length - 5] -= 1;
+                ddddd = false;
+                matchMakerConnection.Send(data2);
+            }
+            else
+            {
+                matchMakerConnection.Send(data);
+            }
         }
     }
 
     private void SendDisconnectMessage()
     {
         RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(serverData.id);
-        byte[] message = removeEntityMessage.Serialize(-1);
+        byte[] data = removeEntityMessage.Serialize(-1);
         if (!debug)
         {
-            matchMakerConnection.Send(message);
+            //matchMakerConnection.Send(data);
 
             Debug.Log("Send server disconnect");
 
-            SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, message, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency() * latencyMultiplier);
+            
+            if (eeeee)
+            {
+                byte[] data2 = new byte[data.Length];
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data2[i] = data[i];
+                }
+
+                data2[data.Length - 5] -= 1;
+                eeeee = false;
+                matchMakerConnection.Send(data2);
+            }
+            else
+            {
+                matchMakerConnection.Send(data);
+            }
         }
     }
 
-    private void SendClientListMessage()
+    private void SendClientListMessage(IPEndPoint ip)
     {
-        byte[] message = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1); //admission time doesn't matter in this case because server was the originator
+        byte[] data = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1); //admission time doesn't matter in this case because server was the originator
 
-        SendData(message); 
-        
-        SaveSentMessage(MESSAGE_TYPE.CLIENTS_LIST, message, GetBiggerLatency() * latencyMultiplier);
+        //SendToSpecificClient(data, ip);
+
+        SaveSentMessage(MESSAGE_TYPE.CLIENTS_LIST, data, GetBiggerLatency() * latencyMultiplier);
+
+        if (fffff)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 5] -= 1;
+            fffff = false;
+            SendToSpecificClient(data2, ip);
+        }
+        else
+        {
+            SendToSpecificClient(data, ip);
+        }
     }
     #endregion
 
@@ -364,7 +499,7 @@ public class ServerNetworkManager : NetworkManager
 
     private double GetBiggerLatency()
     {
-        double latency = 0;
+        double latency = 20;
 
         foreach (var clientLatency in clientsLatencies)
         {

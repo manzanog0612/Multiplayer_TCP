@@ -43,7 +43,7 @@ public class DataHandler : MonoBehaviourSingleton<DataHandler>
 
     public void SendPlayerData(PlayerData playerData)
     {
-        (NetworkManager.Instance as ClientNetworkManager).SendPlayerMessageMessage(playerData);
+        (NetworkManager.Instance as ClientNetworkManager).SendPlayerDataMessage(playerData);
     }
 
     public void SendData(byte[] message)

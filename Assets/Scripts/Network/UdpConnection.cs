@@ -52,26 +52,43 @@ public class UdpConnection
     {
         try
         {
-            DataReceived dataReceived = new DataReceived();
-            dataReceived.data = connection?.EndReceive(ar, ref dataReceived.ipEndPoint);
-
-            lock (handler)
+            try
             {
-                dataReceivedQueue.Enqueue(dataReceived);
-            }
-        }
-        catch(SocketException e)
-        {
-            // This happens when a client disconnects, as we fail to send to that port.
-            UnityEngine.Debug.LogError("[UdpConnection] " + e.Message);
-        }
+                DataReceived dataReceived = new DataReceived();
 
-        connection.BeginReceive(OnReceive, null);
+                dataReceived.data = connection?.EndReceive(ar, ref dataReceived.ipEndPoint);
+
+                lock (handler)
+                {
+                    dataReceivedQueue.Enqueue(dataReceived);
+                }
+            }
+            catch (SocketException e)
+            {
+                // This happens when a client disconnects, as we fail to send to that port.
+                UnityEngine.Debug.LogError("[UdpConnection] " + e.Message);
+            }
+
+            connection.BeginReceive(OnReceive, null);
+        }
+        catch (ObjectDisposedException e)
+        {
+            // This happens the server closes and there are clients connected, as they send a message to the server when this is closed.
+            UnityEngine.Debug.Log("[UdpConnection] " + e.Message);
+        }
     }
 
     public void Send(byte[] data)
     {
-        connection.Send(data, data.Length);
+        try
+        {
+            connection.Send(data, data.Length);
+        }
+        catch (ObjectDisposedException e)
+        {
+            // This happens the server closes and there are clients connected, as they send a message to the server when this is closed.
+            UnityEngine.Debug.Log("[UdpConnection] " + e.Message);
+        }
     }
 
     public void Send(byte[] data, IPEndPoint ipEndpoint)

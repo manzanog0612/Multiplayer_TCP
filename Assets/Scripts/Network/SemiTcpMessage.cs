@@ -6,11 +6,11 @@ public abstract class SemiTcpMessage
 
     public int GetTailSize()
     {
-        return sizeof(float) + sizeof(int);
+        return sizeof(int) + sizeof(int);
     }
 
     public MessageTail DeserializeTail(byte[] message, int headerSize, int messageSize)
     {
-        return new MessageTail(BitConverter.ToInt32(message, headerSize + messageSize), message.Length);
+        return new MessageTail(BitConverter.ToInt32(message, headerSize + messageSize), BitConverter.ToInt32(message, headerSize + messageSize + sizeof(int)));
     }
 }

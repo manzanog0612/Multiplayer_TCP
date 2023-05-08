@@ -493,8 +493,6 @@ MonoBehaviour:
   chatScreen: {fileID: 1130635392}
   clientHandler: {fileID: 223974227}
   connectBtn: {fileID: 396509903}
-  portInputField: {fileID: 1558557928}
-  addressInputField: {fileID: 2123302590}
 --- !u!1 &304126657
 GameObject:
   m_ObjectHideFlags: 0
@@ -2405,7 +2403,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1672222390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2421,6 +2419,7 @@ MonoBehaviour:
   playerHandler: {fileID: 1439841758}
   serverHandler: {fileID: 0}
   clientHandler: {fileID: 223974227}
+  Latency: 0
 --- !u!4 &1672222391
 Transform:
   m_ObjectHideFlags: 0

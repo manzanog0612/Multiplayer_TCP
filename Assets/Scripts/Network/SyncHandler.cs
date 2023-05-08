@@ -36,12 +36,8 @@ public class SyncHandler : MonoBehaviour
     #endregion
 
     #region CONSTANTS
-    private const int kickTime = 30;
+    private const int kickTime = 15;
     private const int syncTime = 2;
-    #endregion
-
-    #region PROPERTIES
-    public double Latency = 0;
     #endregion
 
     #region UNITY_CALLS
@@ -56,7 +52,7 @@ public class SyncHandler : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void Awake()
     {
         tcpConnection = NetworkManager.Instance.IsTcpConnection;
 
@@ -135,6 +131,8 @@ public class SyncHandler : MonoBehaviour
         {
             DataHandler.Instance.SendData(syncMessage.Serialize((NetworkManager.Instance as ClientNetworkManager).admissionTimeStamp)); // I send this because i need to send the player id
         }
+
+        timeSinceLastDataSend = 0;
     }
 
     private void OnReceiveSync(int id)
@@ -159,6 +157,7 @@ public class SyncHandler : MonoBehaviour
                 if (clientTimes[i].timeSinceLastConnection > kickTime)
                 {
                     id = clientTimes[i].id;
+                    clientTimes.Remove(clientTimes[i]);
                     return true;
                 }
             }

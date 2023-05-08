@@ -1,5 +1,4 @@
 using System.Net;
-
 using UnityEngine;
 
 public class ClientNetworkManager : NetworkManager
@@ -9,6 +8,12 @@ public class ClientNetworkManager : NetworkManager
     private TcpClientConnection tcpClientConnection = null;
 
     private double latency = 20;
+
+    private bool aaaaa = false;
+    private bool bbbbb = false;
+    private bool ccccc = true;
+    private bool ddddd = false;
+    private bool eeeee = false;
     #endregion
 
     #region PROPERTIES
@@ -40,8 +45,8 @@ public class ClientNetworkManager : NetworkManager
 
         udpConnection = new UdpConnection(ip, port, this);
 
-        //SendHandShake();
-        SendConnectRequest();
+        SendHandShake();
+        //SendConnectRequest();
 
         onDefineIsServer?.Invoke(isServer);
 
@@ -91,12 +96,10 @@ public class ClientNetworkManager : NetworkManager
     #region DATA_RECEIVE_PROCESS
     protected override void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
     {
-        if (!ipToId.ContainsKey(clientConnectionData))
-        {
-            return;
-        }
+        base.ProcessSync(clientConnectionData, data);
 
         latency = CalculateLatency(data);
+        latency = latency > 20 ? latency : 0;
     }
 
     protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
@@ -120,8 +123,6 @@ public class ClientNetworkManager : NetworkManager
         Debug.Log("Received connection data, now connecting to port " + port.ToString() + " and sending handshake.");
 
         SendHandShake();
-
-        onStartConnection.Invoke();
     }
 
     protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
@@ -174,21 +175,41 @@ public class ClientNetworkManager : NetworkManager
 
         Debug.Log("Client" + assignedId.ToString() + " got his id = " + id.ToString() + " assigned for first time");
         assignedId = id;
+
+        onStartConnection.Invoke();
     }
     #endregion
 
     #region SEND_DATA_METHODS
-    public void SendPlayerMessageMessage(PlayerData playerData) //esto es horrible pero es para handlear lo que ya tenía, no tengo tiempo para arreglar arq ahora
+    public void SendPlayerDataMessage(PlayerData playerData) //esto es horrible pero es para handlear lo que ya tenía, no tengo tiempo para arreglar arq ahora
     {
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
-        byte[] message = playerDataMessage.Serialize(admissionTimeStamp);
-        SendData(message);
+        byte[] data = playerDataMessage.Serialize(admissionTimeStamp);
+        //SendData(data);
 
-        MESSAGE_TYPE messageType = MessageFormater.GetMessageType(message);
+        MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
 
         if (messageType == MESSAGE_TYPE.STRING)
         {
-            SaveSentMessage(messageType, message, latency * latencyMultiplier);
+            SaveSentMessage(messageType, data, latency * latencyMultiplier);
+        }
+
+        if (aaaaa)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 10] -= 1;
+            aaaaa = false;
+            SendData(data2);
+        }
+        else
+        {
+            SendData(data);
         }
     }
 
@@ -198,11 +219,29 @@ public class ClientNetworkManager : NetworkManager
 
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
 
-        byte[] message = resendDataMessage.Serialize(-1);
+        byte[] data = resendDataMessage.Serialize(-1);
 
-        SendData(message);
+        // SendData(data);
 
-        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, message, latency * latencyMultiplier);
+        SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, latency * latencyMultiplier);
+
+        if (bbbbb)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 10] -= 1;
+            bbbbb = false;
+            SendData(data2);
+        }
+        else
+        {
+            SendData(data);
+        }
     }
 
     public override void SendDisconnect(int id)
@@ -218,9 +257,27 @@ public class ClientNetworkManager : NetworkManager
 
         byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
 
-        SendData(data);
+        //SendData(data);
 
         SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, latency * latencyMultiplier);
+
+        if (ccccc)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 10] -= 1;
+            ccccc = false;
+            SendData(data2);
+        }
+        else
+        {
+            SendData(data);
+        }
     }
 
     private void SendConnectRequest()
@@ -228,11 +285,29 @@ public class ClientNetworkManager : NetworkManager
         IPEndPoint client = new IPEndPoint(ipAddress, port);
         ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage((client.Address.Address, client.Port));
 
-        byte[] message = connectRequestMessage.Serialize(admissionTimeStamp);
+        byte[] data = connectRequestMessage.Serialize(admissionTimeStamp);
 
-        SendData(message);
+        //SendData(data);
 
-        SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, message, latency * latencyMultiplier);
+        SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, data, latency * latencyMultiplier);
+
+        if (ddddd)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+            
+            data2[data.Length - 10] -= 1;
+            ddddd = false;
+            SendData(data2);
+        }
+        else
+        {
+            SendData(data);
+        }        
     }
 
     private void SendHandShake()
@@ -242,11 +317,29 @@ public class ClientNetworkManager : NetworkManager
 
         HandShakeMessage handShakeMessage = new HandShakeMessage((client.Address.Address, client.Port, new Color(RandNum(), RandNum(), RandNum(), 1)));
 
-        byte[] message = handShakeMessage.Serialize(admissionTimeStamp);
+        byte[] data = handShakeMessage.Serialize(admissionTimeStamp);
 
-        SendData(message);
+        //SendData(data);
 
-        SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, message, latency * latencyMultiplier);
+        SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, data, latency * latencyMultiplier);
+
+        if (eeeee)
+        {
+            byte[] data2 = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data2[i] = data[i];
+            }
+
+            data2[data.Length - 10] -= 1;
+            eeeee = false;
+            SendData(data2);
+        }
+        else
+        {
+            SendData(data);
+        }
     }
     #endregion
 
@@ -265,7 +358,7 @@ public class ClientNetworkManager : NetworkManager
 
     private float RandNum()
     {
-        return UnityEngine.Random.Range(0f, 1f);
+        return Random.Range(0f, 1f);
     }
     #endregion
 }

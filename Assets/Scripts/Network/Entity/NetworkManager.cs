@@ -54,11 +54,6 @@ public class NetworkManager : IReceiveData
         MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
         float timeStamp = MessageFormater.GetAdmissionTime(data);
 
-        if (isServer)
-        {
-
-        }
-
         switch (messageType)
         {
             case MESSAGE_TYPE.SYNC:
@@ -100,7 +95,8 @@ public class NetworkManager : IReceiveData
     }
     #endregion
 
-    #region PROTECTED_METHODS   
+    #region PROTECTED_METHODS
+
     protected virtual void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Vector3 position, Color color)
     {
         if (ipToId.ContainsKey((ip, realtimeSinceStartup)))
@@ -147,7 +143,7 @@ public class NetworkManager : IReceiveData
     {
         MessageTail messageTail = semiTcpMessage.DeserializeTail(data, headerSize, messageSize);
 
-        return op == messageTail.messageOperationResult;
+        return op == messageTail.messageOperationResult && data.Length == messageTail.messageSize;
     }
 
     protected void SaveSentMessage(MESSAGE_TYPE messageType, byte[] data, double saveTime)
@@ -184,12 +180,15 @@ public class NetworkManager : IReceiveData
 
     protected virtual void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
     {
-        if (!ipToId.ContainsKey(clientConnectionData))
+        if (isServer)
         {
-            return;
+            if (!ipToId.ContainsKey(clientConnectionData))
+            {
+                return;
+            }
         }
 
-        int id = ipToId[clientConnectionData];
+        int id = isServer ? ipToId[clientConnectionData] : -1;
 
         onSync?.Invoke(id);
     }
@@ -213,6 +212,10 @@ public class NetworkManager : IReceiveData
         if (lastSemiTcpMessages.ContainsKey(messageTypeToResend))
         {
             SendData(lastSemiTcpMessages[messageTypeToResend].data);
+        }
+        else
+        {
+            Debug.Log("There wasn't data of message type " + (int)messageTypeToResend);
         }
     }
 
