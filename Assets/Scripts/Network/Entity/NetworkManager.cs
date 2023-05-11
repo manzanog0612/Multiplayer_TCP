@@ -41,6 +41,7 @@ public class NetworkManager : IReceiveData
     #region CONSTANTS
     private const bool isTcpConnection = false;
     protected const double latencyMultiplier = 5;
+    protected const float minimunSaveTime = 0.1f;
     #endregion
 
     #region PUBLIC_METHODS
@@ -72,26 +73,26 @@ public class NetworkManager : IReceiveData
                 ProcessConnectRequest(ip, data);
                 break;
             case MESSAGE_TYPE.ENTITY_DISCONECT:
-                ProcessEntityDisconnect(ip, data);//
+                ProcessEntityDisconnect(ip, data);
                 break;
             case MESSAGE_TYPE.HAND_SHAKE:
-                ProcessHandShake((ip, timeStamp), data);//
+                ProcessHandShake((ip, timeStamp), data);
                 break;
             case MESSAGE_TYPE.CLIENTS_LIST:
                 ProcessClientList(data);
                 break;
             case MESSAGE_TYPE.STRING:
             case MESSAGE_TYPE.VECTOR3:
-                ProcessGameMessage((ip, timeStamp), data, messageType);//
+                ProcessGameMessage((ip, timeStamp), data, messageType);
                 break;
             default:
                 break;
         }
     }
 
-    public virtual void SendDisconnect(int id)
+    public virtual void SendDisconnectClient(int id)
     {
-        Debug.Log("Removing player " + id.ToString());
+        Debug.Log("Disconecting player: " + id.ToString());
     }
     #endregion
 
@@ -132,7 +133,7 @@ public class NetworkManager : IReceiveData
         DateTime utcNow = new DateTime(2023, 5, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, DateTime.UtcNow.Second, DateTime.UtcNow.Millisecond);
         DateTime messageNow = new DateTime(2023, 5, sendTime.day, sendTime.hour, sendTime.minute, sendTime.second, sendTime.millisecond);
 
-        double latency = (int)(utcNow - messageNow).TotalMilliseconds;
+        double latency = (utcNow - messageNow).TotalSeconds;
 
         Debug.Log("L: " + latency.ToString());
 
@@ -148,14 +149,19 @@ public class NetworkManager : IReceiveData
 
     protected void SaveSentMessage(MESSAGE_TYPE messageType, byte[] data, double saveTime)
     {
+        float millisecond = (float)saveTime;
+        float saveTimeFinal = millisecond < Time.deltaTime * 2 ? Time.deltaTime * 2 : millisecond;
+
         if (lastSemiTcpMessages.ContainsKey(messageType))
         {
-            lastSemiTcpMessages[messageType] = (data, (float)saveTime / 1000);
+            lastSemiTcpMessages[messageType] = (data, saveTimeFinal);
         }
         else
         {
-            lastSemiTcpMessages.Add(messageType, (data, (float)saveTime / 1000));
+            lastSemiTcpMessages.Add(messageType, (data, saveTimeFinal));
         }
+
+        Debug.Log("Saved message " + (int)messageType + " for " + saveTimeFinal + " seconds");
     }
 
     protected virtual void SendResendDataMessage(MESSAGE_TYPE messageType, IPEndPoint ip)

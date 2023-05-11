@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 
+using UnityEngine;
+
 using Debug = UnityEngine.Debug;
 
 public class MatchMaker : NetworkManager, IReceiveData
@@ -16,15 +18,14 @@ public class MatchMaker : NetworkManager, IReceiveData
 
     private IPEndPoint lastClientIp = null;
 
-    private bool aaaaa = false;
-    private bool bbbbb = false;
+    private bool sendResendDataWrong = false;
+    private bool sendConnectDataWrong = false;
     #endregion
 
     #region CONSTANTS
     public const int matchMakerPort = 8053;
     public const int amountPlayersPerMatch = 2;
     public const string ip = "127.0.0.1";
-    private int minimunSaveTime = 20;
     #endregion
 
     #region PUBLIC_METHODS
@@ -96,6 +97,8 @@ public class MatchMaker : NetworkManager, IReceiveData
         if (servers.ContainsKey(serverData.id))
         {
             servers[serverData.id] = serverData;
+
+            Debug.Log("Received data update from server " + serverData.id + "- CLIENTS: " + serverData.amountPlayers);
         }
     }
 
@@ -192,7 +195,7 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, latency < minimunSaveTime ? minimunSaveTime : latency * latencyMultiplier);
 
-        if (aaaaa)
+        if (sendResendDataWrong)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -202,7 +205,7 @@ public class MatchMaker : NetworkManager, IReceiveData
             }
 
             data2[data.Length - 10] -= 1;
-            aaaaa = false;
+            sendResendDataWrong = false;
             clientUdpConnection.Send(data2, ip);
         }
         else
@@ -225,7 +228,7 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, data, latency < minimunSaveTime ? minimunSaveTime : latency * latencyMultiplier);
 
-        if (bbbbb)
+        if (sendConnectDataWrong)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -235,7 +238,7 @@ public class MatchMaker : NetworkManager, IReceiveData
             }
 
             data2[data.Length - 10] -= 1;
-            bbbbb = false;
+            sendConnectDataWrong = false;
             clientUdpConnection.Send(data2, lastClientIp);
         }
         else
@@ -250,38 +253,42 @@ public class MatchMaker : NetworkManager, IReceiveData
     {
         int port = GetAvailablePort();
 
+        string assetsPath = Application.dataPath;
+
+#if UNITY_EDITOR
+        string buildPath = assetsPath.Substring(0, assetsPath.LastIndexOf('/')) + "/Builds/Server/Multiplayer.exe";
+#else
+        string buildPath = assetsPath.Substring(0, assetsPath.LastIndexOf('/'));
+        buildPath = buildPath.Substring(0, buildPath.LastIndexOf('/')) + "/Server/Multiplayer.exe";
+#endif
+
         ProcessStartInfo start = new ProcessStartInfo();
         start.Arguments = port.ToString() + "-" + serverId.ToString();
-        start.FileName = "C:\\Users\\guill\\Desktop\\server\\Multiplayer.exe";//application.datapath
-
+        start.FileName = buildPath;
+        
         Process process = Process.Start(start);
-
+        
         ServerData server = new ServerData(serverId, port, 0);
-
+        
         servers.Add(serverId, server);
         processes.Add(serverId, process);
-
+        
         serverId++;
-
+        
         return server;
     }
-    #endregion
+#endregion
 
-    #region AUX
+#region AUX
     private ServerData GetAvailableServer()
     {
+        UpdateDictionaries();
+
         foreach (var server in servers)
         {
             if (server.Value.amountPlayers < amountPlayersPerMatch)
             {
-                if (processes[server.Value.id].HasExited)
-                {
-                    processes.Remove(server.Value.id);
-                }
-                else
-                {
-                    return servers[server.Key];
-                }
+                return servers[server.Key];
             }
         }
 
@@ -314,5 +321,24 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         return null;
     }
-    #endregion
+
+    private void UpdateDictionaries()
+    {
+        List<int> idsToRemove = new List<int>();
+
+        foreach (var process in processes)
+        {
+            if (process.Value.HasExited)
+            {
+                idsToRemove.Add(process.Key);
+            }
+        }
+
+        for (int i = 0; i < idsToRemove.Count; i++)
+        {
+            processes.Remove(idsToRemove[i]);
+            servers.Remove(idsToRemove[i]);
+        }
+    }
+#endregion
 }

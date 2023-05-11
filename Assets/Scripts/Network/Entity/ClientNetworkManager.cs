@@ -7,13 +7,13 @@ public class ClientNetworkManager : NetworkManager
     private UdpConnection udpConnection = null;
     private TcpClientConnection tcpClientConnection = null;
 
-    private double latency = 20;
+    private double latency = minimunSaveTime;
 
-    private bool aaaaa = false;
-    private bool bbbbb = false;
-    private bool ccccc = true;
-    private bool ddddd = false;
-    private bool eeeee = false;
+    private bool sendPlayerDataWrong = false;
+    private bool sendResendDataWrong = false;
+    private bool sendDiconnectClientWrong = false;
+    private bool sendConnectRequestWrong = false;
+    private bool sendHandShakeWrong = false;
     #endregion
 
     #region PROPERTIES
@@ -32,7 +32,8 @@ public class ClientNetworkManager : NetworkManager
     public void DisconectClient()
     {
         Debug.Log("This player is going to be eliminated");
-        SendDisconnect(assignedId);
+        SendDisconnectClient(assignedId);
+        Application.Quit();
     }
 
     #region UDP
@@ -45,8 +46,8 @@ public class ClientNetworkManager : NetworkManager
 
         udpConnection = new UdpConnection(ip, port, this);
 
-        SendHandShake();
-        //SendConnectRequest();
+        //SendHandShake();
+        SendConnectRequest();
 
         onDefineIsServer?.Invoke(isServer);
 
@@ -99,7 +100,7 @@ public class ClientNetworkManager : NetworkManager
         base.ProcessSync(clientConnectionData, data);
 
         latency = CalculateLatency(data);
-        latency = latency > 20 ? latency : 0;
+        latency = latency < minimunSaveTime ? minimunSaveTime : latency;
     }
 
     protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
@@ -178,6 +179,22 @@ public class ClientNetworkManager : NetworkManager
 
         onStartConnection.Invoke();
     }
+
+    protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
+    {
+        base.ProcessHandShake(clientConnectionData, data);
+
+        if (!wasLastMessageSane)
+        {
+            SendResendDataMessage(MESSAGE_TYPE.HAND_SHAKE, clientConnectionData.ip);
+            return;
+        }
+
+        Debug.Log("Server is processing Handshake");
+
+        (long ip, int id, Color color) message = new HandShakeMessage().Deserialize(data);
+        AddClient(clientConnectionData.ip, message.id, clientConnectionData.timeStamp, Vector3.zero, message.color);
+    }
     #endregion
 
     #region SEND_DATA_METHODS
@@ -194,7 +211,7 @@ public class ClientNetworkManager : NetworkManager
             SaveSentMessage(messageType, data, latency * latencyMultiplier);
         }
 
-        if (aaaaa)
+        if (sendPlayerDataWrong && messageType == MESSAGE_TYPE.STRING)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -204,7 +221,7 @@ public class ClientNetworkManager : NetworkManager
             }
 
             data2[data.Length - 10] -= 1;
-            aaaaa = false;
+            sendPlayerDataWrong = false;
             SendData(data2);
         }
         else
@@ -219,13 +236,13 @@ public class ClientNetworkManager : NetworkManager
 
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
 
-        byte[] data = resendDataMessage.Serialize(-1);
+        byte[] data = resendDataMessage.Serialize(admissionTimeStamp);
 
         // SendData(data);
 
         SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, latency * latencyMultiplier);
 
-        if (bbbbb)
+        if (sendResendDataWrong)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -235,7 +252,7 @@ public class ClientNetworkManager : NetworkManager
             }
 
             data2[data.Length - 10] -= 1;
-            bbbbb = false;
+            sendResendDataWrong = false;
             SendData(data2);
         }
         else
@@ -244,9 +261,9 @@ public class ClientNetworkManager : NetworkManager
         }
     }
 
-    public override void SendDisconnect(int id)
+    public override void SendDisconnectClient(int id)
     {
-        base.SendDisconnect(id);
+        base.SendDisconnectClient(id);
 
         RemoveEntityMessage removeClientMessage = new RemoveEntityMessage(id);
 
@@ -261,7 +278,7 @@ public class ClientNetworkManager : NetworkManager
 
         SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, latency * latencyMultiplier);
 
-        if (ccccc)
+        if (sendDiconnectClientWrong)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -271,7 +288,7 @@ public class ClientNetworkManager : NetworkManager
             }
 
             data2[data.Length - 10] -= 1;
-            ccccc = false;
+            sendDiconnectClientWrong = false;
             SendData(data2);
         }
         else
@@ -291,7 +308,7 @@ public class ClientNetworkManager : NetworkManager
 
         SaveSentMessage(MESSAGE_TYPE.CONNECT_REQUEST, data, latency * latencyMultiplier);
 
-        if (ddddd)
+        if (sendConnectRequestWrong)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -301,7 +318,7 @@ public class ClientNetworkManager : NetworkManager
             }
             
             data2[data.Length - 10] -= 1;
-            ddddd = false;
+            sendConnectRequestWrong = false;
             SendData(data2);
         }
         else
@@ -323,7 +340,7 @@ public class ClientNetworkManager : NetworkManager
 
         SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, data, latency * latencyMultiplier);
 
-        if (eeeee)
+        if (sendHandShakeWrong)
         {
             byte[] data2 = new byte[data.Length];
 
@@ -333,7 +350,7 @@ public class ClientNetworkManager : NetworkManager
             }
 
             data2[data.Length - 10] -= 1;
-            eeeee = false;
+            sendHandShakeWrong = false;
             SendData(data2);
         }
         else
