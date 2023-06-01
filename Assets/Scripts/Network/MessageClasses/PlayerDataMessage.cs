@@ -27,15 +27,12 @@ public class PlayerDataMessage : IMessage<PlayerData>
         switch (MessageFormater.GetMessageType(data))
         {
             case MESSAGE_TYPE.STRING:
-                StringMessage stringMessage = new StringMessage();
-
-                string chat = stringMessage.Deserialize(data);
+                string chat = StringMessage.Deserialize(data);
                 outData.message = chat;
                 break;
             case MESSAGE_TYPE.VECTOR3:
-                Vector3Message vector3Message = new Vector3Message();
                 outData.movement = outData.position; // a check to know if the player moved
-                outData.position = vector3Message.Deserialize(data);
+                outData.position = Vector3Message.Deserialize(data);
                 break;
             default:
                 break;
@@ -44,12 +41,12 @@ public class PlayerDataMessage : IMessage<PlayerData>
         return outData;
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         throw new System.NotImplementedException();
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         throw new System.NotImplementedException();
     }
@@ -73,9 +70,9 @@ public class PlayerDataMessage : IMessage<PlayerData>
         return outData.ToArray();
     }
 
-    int IMessage<PlayerData>.GetHeaderSize()
+    static int GetHeaderSize()
     {
-        throw new System.NotImplementedException();
+        return 0;
     }
 
     MessageHeader IMessage<PlayerData>.GetMessageHeader(float admissionTime)

@@ -221,10 +221,10 @@ public class ServerNetworkManager : NetworkManager
     #region DATA_RECEIVE_PROCESS
     protected override void ProcessResendData(IPEndPoint ip, byte[] data)
     {
-        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+        MESSAGE_TYPE messageTypeToResend = ResendDataMessage.Deserialize(data);
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageTypeToResend);
 
-        wasLastMessageSane = CheckMessageSanity(data, resendDataMessage.GetHeaderSize(), resendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
+        wasLastMessageSane = CheckMessageSanity(data, ResendDataMessage.GetHeaderSize(), ResendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
         
         if (!wasLastMessageSane)
         {
@@ -275,7 +275,7 @@ public class ServerNetworkManager : NetworkManager
             return;
         }
 
-        int clientId = new RemoveEntityMessage().Deserialize(data);
+        int clientId = RemoveEntityMessage.Deserialize(data);
 
         if (!clients.ContainsKey(clientId))
         {
@@ -299,7 +299,7 @@ public class ServerNetworkManager : NetworkManager
 
         Debug.Log("Server is processing Handshake");
 
-        (long ip, int port, Color color) message = new HandShakeMessage().Deserialize(data);
+        (long ip, int port, Color color) message = HandShakeMessage.Deserialize(data);
 
         SendHandShakeForClients(message, clientConnectionData.timeStamp);
         
@@ -326,7 +326,7 @@ public class ServerNetworkManager : NetworkManager
 
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
 
-        byte[] data = resendDataMessage.Serialize(-1);
+        byte[] data = resendDataMessage.Serialize();
         
         SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, GetBiggerLatency() * latencyMultiplier);
 
@@ -390,11 +390,9 @@ public class ServerNetworkManager : NetworkManager
     private void SendDataUpdate()
     {
         ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(serverData);
-        byte[] data = serverDataUpdateMessage.Serialize(-1);
+        byte[] data = serverDataUpdateMessage.Serialize();
         if (!debug)
         {
-            //matchMakerConnection.Send(data);
-
             Debug.Log("Send server update data to match maker");
 
             SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, data, GetBiggerLatency() * latencyMultiplier);
@@ -422,7 +420,7 @@ public class ServerNetworkManager : NetworkManager
     private void SendIsOnMessage()
     {
         ServerOnMessage serverOnMessage = new ServerOnMessage(port);
-        byte[] data = serverOnMessage.Serialize(-1);
+        byte[] data = serverOnMessage.Serialize();
         if (!debug)
         {
             //matchMakerConnection.Send(data);
@@ -454,7 +452,7 @@ public class ServerNetworkManager : NetworkManager
     private void SendDisconnectMessage()
     {
         RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(serverData.id);
-        byte[] data = removeEntityMessage.Serialize(-1);
+        byte[] data = removeEntityMessage.Serialize();
         if (!debug)
         {
             //matchMakerConnection.Send(data);
@@ -485,7 +483,7 @@ public class ServerNetworkManager : NetworkManager
 
     private void SendClientListMessage(IPEndPoint ip)
     {
-        byte[] data = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(-1); //admission time doesn't matter in this case because server was the originator
+        byte[] data = new ClientsListMessage((GetClientsList(), clientId - 1)).Serialize(); //admission time doesn't matter in this case because server was the originator
 
         //SendToSpecificClient(data, ip);
 

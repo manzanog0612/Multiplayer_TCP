@@ -21,7 +21,7 @@ public class Vector2Message : IMessage<Vector2>
     #endregion
 
     #region PUBLIC_METHODS
-    public Vector2 Deserialize(byte[] message)
+    public static Vector2 Deserialize(byte[] message)
     {
         Vector2 outData;
 
@@ -36,7 +36,7 @@ public class Vector2Message : IMessage<Vector2>
         return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.VECTOR2;
     }
@@ -55,12 +55,12 @@ public class Vector2Message : IMessage<Vector2>
         return outData.ToArray();
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         throw new NotImplementedException();
     }

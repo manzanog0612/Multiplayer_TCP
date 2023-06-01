@@ -113,7 +113,7 @@ public class ClientNetworkManager : NetworkManager
             return;
         }
 
-        (long server, int port) serverData = new ConnectRequestMessage().Deserialize(data);
+        (long server, int port) serverData = ConnectRequestMessage.Deserialize(data);
 
         udpConnection.Close();
         udpConnection = null;
@@ -136,7 +136,7 @@ public class ClientNetworkManager : NetworkManager
             return;
         }
 
-        int clientId = new RemoveEntityMessage().Deserialize(data);
+        int clientId = RemoveEntityMessage.Deserialize(data);
 
         if (!clients.ContainsKey(clientId))
         {
@@ -166,7 +166,7 @@ public class ClientNetworkManager : NetworkManager
 
         Debug.Log("Client" + assignedId.ToString() + " is adding processing client list");
 
-        ((int id, long server, float timeSinceConection, Vector3 position, Color color)[] clientsList, int id) = new ClientsListMessage().Deserialize(data);
+        ((int id, long server, float timeSinceConection, Vector3 position, Color color)[] clientsList, int id) = ClientsListMessage.Deserialize(data);
 
         for (int i = 0; i < clientsList.Length; i++)
         {
@@ -192,7 +192,7 @@ public class ClientNetworkManager : NetworkManager
 
         Debug.Log("Server is processing Handshake");
 
-        (long ip, int id, Color color) message = new HandShakeMessage().Deserialize(data);
+        (long ip, int id, Color color) message = HandShakeMessage.Deserialize(data);
         AddClient(clientConnectionData.ip, message.id, clientConnectionData.timeStamp, Vector3.zero, message.color);
     }
     #endregion

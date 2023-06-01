@@ -15,15 +15,15 @@ public enum MESSAGE_TYPE
 
 public interface IMessage<T>
 {
-    public MESSAGE_TYPE GetMessageType();
+    public static MESSAGE_TYPE GetMessageType() { return 0; }
 
-    public T Deserialize(byte[] message);
+    public static T Deserialize(byte[] message) { return default(T); }
 
     public MessageHeader GetMessageHeader(float admissionTime);
 
-    public byte[] Serialize(float admissionTime);
+    public byte[] Serialize(float admissionTime = -1);
 
-    public int GetHeaderSize();
+    public static int GetHeaderSize() { return 0; }
 
-    public int GetMessageSize();
+    public static int GetMessageSize() { return 0; }
 }

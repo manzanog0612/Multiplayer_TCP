@@ -21,7 +21,7 @@ public class Vector3Message : IMessage<Vector3>
     #endregion
 
     #region PUBLIC_METHODS
-    public Vector3 Deserialize(byte[] message)
+    public static Vector3 Deserialize(byte[] message)
     {
         Vector3 outData;
 
@@ -37,12 +37,12 @@ public class Vector3Message : IMessage<Vector3>
         return new MessageHeader((int)GetMessageType(), admissionTime, lastMessageId);
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.VECTOR3;
     }
 
-    public byte[] Serialize(float admissionTime)
+    public byte[] Serialize(float admissionTime = -1)
     {
         List<byte> outData = new List<byte>();
 
@@ -58,12 +58,12 @@ public class Vector3Message : IMessage<Vector3>
         return outData.ToArray();
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         throw new NotImplementedException();
     }

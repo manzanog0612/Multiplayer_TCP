@@ -19,7 +19,7 @@ public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
     #endregion
 
     #region PUBLIC_METHODS
-    public (long, int, Color) Deserialize(byte[] message)
+    public static (long, int, Color) Deserialize(byte[] message)
     {
         (long, int, Color) outData;
 
@@ -40,17 +40,17 @@ public class HandShakeMessage : SemiTcpMessage, IMessage<(long, int, Color)>
         return new MessageHeader((int)GetMessageType(), admissionTime);
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.HAND_SHAKE;
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         // (long, int, Color)
         return sizeof(long) + sizeof(int) + sizeof(float) * 4;

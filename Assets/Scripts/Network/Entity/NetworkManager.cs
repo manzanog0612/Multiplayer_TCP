@@ -176,11 +176,11 @@ public class NetworkManager : IReceiveData
     #endregion
 
     #region DATA_RECEIVE_PROCESS
-    private void a(int a)
+    private void ThrowInsaneMessageLogIfInsane(int message)
     {
         if (!wasLastMessageSane)
         {
-            Debug.Log("EL MENSAJE " + a + " ESTABA INSANO");
+            Debug.Log("The message " + message + " was insane");
         }
     }
 
@@ -201,11 +201,11 @@ public class NetworkManager : IReceiveData
 
     protected virtual void ProcessResendData(IPEndPoint ip, byte[] data)
     {
-        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+        MESSAGE_TYPE messageTypeToResend = ResendDataMessage.Deserialize(data);
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageTypeToResend);
 
-        wasLastMessageSane = CheckMessageSanity(data, resendDataMessage.GetHeaderSize(), resendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.RESEND_DATA);
+        wasLastMessageSane = CheckMessageSanity(data, ResendDataMessage.GetHeaderSize(), ResendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.RESEND_DATA);
 
         if (!wasLastMessageSane)
         {
@@ -227,50 +227,50 @@ public class NetworkManager : IReceiveData
 
     protected virtual void ProcessServerDataUpdate(IPEndPoint ip, byte[] data)
     {
-        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(new ServerDataUpdateMessage().Deserialize(data));
+        ServerDataUpdateMessage serverDataUpdateMessage = new ServerDataUpdateMessage(ServerDataUpdateMessage.Deserialize(data));
 
-        wasLastMessageSane = CheckMessageSanity(data, serverDataUpdateMessage.GetHeaderSize(), serverDataUpdateMessage.GetMessageSize(), serverDataUpdateMessage, serverDataUpdateMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.SERVER_DATA_UPDATE);
+        wasLastMessageSane = CheckMessageSanity(data, ServerDataUpdateMessage.GetHeaderSize(), ServerDataUpdateMessage.GetMessageSize(), serverDataUpdateMessage, serverDataUpdateMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.SERVER_DATA_UPDATE);
     }
 
     protected virtual void ProcessServerOn(IPEndPoint ip, byte[] data)
     {
-        ServerOnMessage serverOnMessage = new ServerOnMessage(new ServerOnMessage().Deserialize(data));
+        ServerOnMessage serverOnMessage = new ServerOnMessage(ServerOnMessage.Deserialize(data));
 
-        wasLastMessageSane = CheckMessageSanity(data, serverOnMessage.GetHeaderSize(), serverOnMessage.GetMessageSize(), serverOnMessage, serverOnMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.SERVER_ON);
+        wasLastMessageSane = CheckMessageSanity(data, ServerOnMessage.GetHeaderSize(), ServerOnMessage.GetMessageSize(), serverOnMessage, serverOnMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.SERVER_ON);
     }
 
     protected virtual void ProcessConnectRequest(IPEndPoint ip, byte[] data) 
     {
-        ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage(new ConnectRequestMessage().Deserialize(data));
+        ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage(ConnectRequestMessage.Deserialize(data));
 
-        wasLastMessageSane = CheckMessageSanity(data, connectRequestMessage.GetHeaderSize(), connectRequestMessage.GetMessageSize(), connectRequestMessage, connectRequestMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.CONNECT_REQUEST);
+        wasLastMessageSane = CheckMessageSanity(data, ConnectRequestMessage.GetHeaderSize(), ConnectRequestMessage.GetMessageSize(), connectRequestMessage, connectRequestMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.CONNECT_REQUEST);
     }
     
     protected virtual void ProcessEntityDisconnect(IPEndPoint ip, byte[] data) 
     {
-        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(new RemoveEntityMessage().Deserialize(data));
+        RemoveEntityMessage removeEntityMessage = new RemoveEntityMessage(RemoveEntityMessage.Deserialize(data));
 
-        wasLastMessageSane = CheckMessageSanity(data, removeEntityMessage.GetHeaderSize(), removeEntityMessage.GetMessageSize(), removeEntityMessage, removeEntityMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.ENTITY_DISCONECT);
+        wasLastMessageSane = CheckMessageSanity(data, RemoveEntityMessage.GetHeaderSize(), RemoveEntityMessage.GetMessageSize(), removeEntityMessage, removeEntityMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.ENTITY_DISCONECT);
     }
     
     protected virtual void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
     {
-        HandShakeMessage handShakeMessage = new HandShakeMessage(new HandShakeMessage().Deserialize(data));
+        HandShakeMessage handShakeMessage = new HandShakeMessage(HandShakeMessage.Deserialize(data));
 
-        wasLastMessageSane = CheckMessageSanity(data, handShakeMessage.GetHeaderSize(), handShakeMessage.GetMessageSize(), handShakeMessage, handShakeMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.HAND_SHAKE);
+        wasLastMessageSane = CheckMessageSanity(data, HandShakeMessage.GetHeaderSize(), HandShakeMessage.GetMessageSize(), handShakeMessage, handShakeMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.HAND_SHAKE);
     }
     
     protected virtual void ProcessClientList(byte[] data) 
     {
-        ClientsListMessage clientsListMessage = new ClientsListMessage(new ClientsListMessage().Deserialize(data));
-
-        wasLastMessageSane = CheckMessageSanity(data, clientsListMessage.GetHeaderSize(), clientsListMessage.GetMessageSize(), clientsListMessage, clientsListMessage.GetMessageTail().messageOperationResult);
-        a((int)MESSAGE_TYPE.CLIENTS_LIST);
+        ClientsListMessage clientsListMessage = new ClientsListMessage(ClientsListMessage.Deserialize(data));
+        
+        wasLastMessageSane = CheckMessageSanity(data, ClientsListMessage.GetHeaderSize(), clientsListMessage.GetMessageSize(), clientsListMessage, clientsListMessage.GetMessageTail().messageOperationResult);
+        ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.CLIENTS_LIST);
     }
     
     protected virtual void ProcessGameMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
@@ -287,9 +287,9 @@ public class NetworkManager : IReceiveData
         switch (messageType)
         {
             case MESSAGE_TYPE.STRING:
-                StringMessage stringMessage = new StringMessage(new StringMessage().Deserialize(data));
+                StringMessage stringMessage = new StringMessage(StringMessage.Deserialize(data));
 
-                wasLastMessageSane = CheckMessageSanity(data, stringMessage.GetHeaderSize(), stringMessage.GetMessageSize(), stringMessage, stringMessage.GetMessageTail().messageOperationResult);
+                wasLastMessageSane = CheckMessageSanity(data, StringMessage.GetHeaderSize(), stringMessage.GetMessageSize(), stringMessage, stringMessage.GetMessageTail().messageOperationResult);
                 
                 if (!wasLastMessageSane)
                 {
@@ -332,6 +332,14 @@ public class NetworkManager : IReceiveData
             }
         }
     }
+
+    //private void ProcessMessage<T>(byte[] data, IMessage<T> message, )
+    //{
+    //    IMessage<T> clientsListMessage = new ClientsListMessage(new ClientsListMessage().Deserialize(data));
+    //
+    //    wasLastMessageSane = CheckMessageSanity(data, clientsListMessage.GetHeaderSize(), clientsListMessage.GetMessageSize(), clientsListMessage, clientsListMessage.GetMessageTail().messageOperationResult);
+    //    ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.CLIENTS_LIST);
+    //}
     #endregion
 
     #region AUX
@@ -346,7 +354,7 @@ public class NetworkManager : IReceiveData
 
         if (messageType == MESSAGE_TYPE.VECTOR3)
         {
-            clients[id].position = new Vector3Message().Deserialize(data);
+            clients[id].position = Vector3Message.Deserialize(data);
         }
 
         onReceiveEvent?.Invoke(data, clientConnectionData.ip, id, messageType);

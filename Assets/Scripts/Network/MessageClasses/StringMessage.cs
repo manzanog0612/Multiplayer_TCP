@@ -17,7 +17,7 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
     #endregion
 
     #region PUBLIC_METHODS
-    public string Deserialize(byte[] message)
+    public static string Deserialize(byte[] message)
     {
         string outData = string.Empty;
 
@@ -44,7 +44,7 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
         return new MessageHeader((int)GetMessageType(), admissionTime);
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
     }
@@ -61,7 +61,7 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
         return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.STRING;
     }

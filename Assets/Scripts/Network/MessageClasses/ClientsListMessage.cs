@@ -19,7 +19,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
     #endregion
 
     #region PUBLIC_METHODS
-    public ((int, long, float, Vector3, Color)[], int) Deserialize(byte[] message)
+    public static ((int, long, float, Vector3, Color)[], int) Deserialize(byte[] message)
     {
         List<(int, long, float, Vector3, Color)> outData = new List<(int, long, float, Vector3, Color)>();
 
@@ -93,7 +93,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
         return new MessageHeader((int)GetMessageType());
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
     }
@@ -121,7 +121,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
         return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.CLIENTS_LIST;
     }
@@ -138,7 +138,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
         return idSize + (item1Size + item2Size + item3Size + item4Size + item5Size) * data.initialDatas.Length;
     }
 
-    public byte[] Serialize(float admissionTime)
+    public byte[] Serialize(float admissionTime = -1)
     {
         List<byte> outData = new List<byte>();
 

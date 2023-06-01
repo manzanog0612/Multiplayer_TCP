@@ -59,10 +59,10 @@ public class MatchMaker : NetworkManager, IReceiveData
     #region DATA_RECEIVE_PROCESS
     protected override void ProcessResendData(IPEndPoint ip, byte[] data)
     {
-        MESSAGE_TYPE messageTypeToResend = new ResendDataMessage().Deserialize(data);
+        MESSAGE_TYPE messageTypeToResend = ResendDataMessage.Deserialize(data);
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageTypeToResend);
 
-        wasLastMessageSane = CheckMessageSanity(data, resendDataMessage.GetHeaderSize(), resendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
+        wasLastMessageSane = CheckMessageSanity(data, ResendDataMessage.GetHeaderSize(), ResendDataMessage.GetMessageSize(), resendDataMessage, resendDataMessage.GetMessageTail().messageOperationResult);
 
         if (!wasLastMessageSane)
         {
@@ -92,7 +92,7 @@ public class MatchMaker : NetworkManager, IReceiveData
             return;
         }
 
-        ServerData serverData = new ServerDataUpdateMessage().Deserialize(data);
+        ServerData serverData = ServerDataUpdateMessage.Deserialize(data);
 
         if (servers.ContainsKey(serverData.id))
         {
@@ -112,7 +112,7 @@ public class MatchMaker : NetworkManager, IReceiveData
             return;
         }
 
-        int serverOnPort = new ServerOnMessage().Deserialize(data);
+        int serverOnPort = ServerOnMessage.Deserialize(data);
 
         ServerData server = GetServerByPort(serverOnPort);
 
@@ -132,7 +132,7 @@ public class MatchMaker : NetworkManager, IReceiveData
             return;
         }
 
-        (long server, int port) clientData = new ConnectRequestMessage().Deserialize(data); // only for log and security check
+        (long server, int port) clientData = ConnectRequestMessage.Deserialize(data); // only for log and security check
 
         Debug.Log("Received connection data from port " + clientData.port + ", now looking for server to send client");
 
@@ -162,7 +162,7 @@ public class MatchMaker : NetworkManager, IReceiveData
             return;
         }
 
-        int serverId = new RemoveEntityMessage().Deserialize(data);
+        int serverId = RemoveEntityMessage.Deserialize(data);
 
         Debug.Log("MatchMaker received Server disconnect message for server " + serverId.ToString());
 
@@ -187,7 +187,7 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
 
-        byte[] data = resendDataMessage.Serialize(-1);
+        byte[] data = resendDataMessage.Serialize();
 
         //clientUdpConnection.Send(data, ip);
 
@@ -220,7 +220,7 @@ public class MatchMaker : NetworkManager, IReceiveData
 
         ConnectRequestMessage connectRequestMessage = new ConnectRequestMessage((ipAddress.Address, availableServer.port));
 
-        byte[] data = connectRequestMessage.Serialize(-1);
+        byte[] data = connectRequestMessage.Serialize();
 
         //clientUdpConnection.Send(data, lastClientIp);
 

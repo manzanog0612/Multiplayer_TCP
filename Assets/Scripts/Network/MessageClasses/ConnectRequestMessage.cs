@@ -17,7 +17,7 @@ public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
     #endregion
 
     #region PUBLIC_METHODS
-    public (long, int) Deserialize(byte[] message)
+    public static (long, int) Deserialize(byte[] message)
     {
         (long, int) outData;
 
@@ -34,7 +34,7 @@ public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
         return new MessageHeader((int)GetMessageType());
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
     }
@@ -49,17 +49,17 @@ public class ConnectRequestMessage : SemiTcpMessage, IMessage<(long, int)>
         return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.CONNECT_REQUEST;
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         return sizeof(long) + sizeof(int);
     }
 
-    public byte[] Serialize(float admissionTime)
+    public byte[] Serialize(float admissionTime = -1)
     {
         List<byte> outData = new List<byte>();
 

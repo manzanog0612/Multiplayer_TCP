@@ -4,7 +4,7 @@ public abstract class SemiTcpMessage
 {
     public abstract MessageTail GetMessageTail();
 
-    public int GetTailSize()
+    public static int GetTailSize()
     {
         return sizeof(int) + sizeof(int);
     }

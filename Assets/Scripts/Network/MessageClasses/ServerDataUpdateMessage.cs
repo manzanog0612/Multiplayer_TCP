@@ -17,7 +17,7 @@ public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
     #endregion
 
     #region PUBLIC_METHODS
-    public ServerData Deserialize(byte[] message)
+    public static ServerData Deserialize(byte[] message)
     {
         int messageStart = GetHeaderSize();
 
@@ -31,7 +31,7 @@ public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
         return new MessageHeader((int)GetMessageType());
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
     }
@@ -47,17 +47,17 @@ public class ServerDataUpdateMessage : SemiTcpMessage, IMessage<ServerData>
         return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.SERVER_DATA_UPDATE;
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         return sizeof(int) * 3;
     }
 
-    public byte[] Serialize(float admissionTime)
+    public byte[] Serialize(float admissionTime = -1)
     {
         List<byte> outData = new List<byte>();
 

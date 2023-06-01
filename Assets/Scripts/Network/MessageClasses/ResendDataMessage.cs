@@ -17,7 +17,7 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
     #endregion
 
     #region PUBLIC_METHODS
-    public MESSAGE_TYPE Deserialize(byte[] message)
+    public static MESSAGE_TYPE Deserialize(byte[] message)
     {
         MESSAGE_TYPE outData = (MESSAGE_TYPE)BitConverter.ToInt32(message, GetHeaderSize());
 
@@ -29,7 +29,7 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
         return new MessageHeader((int)GetMessageType());
     }
 
-    public int GetHeaderSize()
+    public static int GetHeaderSize()
     {
         return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
     }
@@ -43,17 +43,17 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
         return new MessageTail(messageOperationParts.ToArray(), GetHeaderSize() + GetMessageSize() + GetTailSize());
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.RESEND_DATA;
     }
 
-    public int GetMessageSize()
+    public static int GetMessageSize()
     {
         return sizeof(int);
     }
 
-    public byte[] Serialize(float admissionTime)
+    public byte[] Serialize(float admissionTime = -1)
     {
         List<byte> outData = new List<byte>();
 

@@ -13,7 +13,7 @@ public class SyncMessage
         return new MessageHeader((int)GetMessageType(), admissionTime);
     }
 
-    public MESSAGE_TYPE GetMessageType()
+    public static MESSAGE_TYPE GetMessageType()
     {
         return MESSAGE_TYPE.SYNC;
     }
