@@ -46,7 +46,7 @@ public class StringMessage : SemiTcpMessage, IMessage<string>
 
     public static int GetHeaderSize()
     {
-        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
+        return sizeof(bool) + sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float);
     }
 
     public override MessageTail GetMessageTail()

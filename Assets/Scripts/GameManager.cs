@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+[SyncNode]
 public class GameManager : MonoBehaviourSingleton<GameManager>
 {
     #region EXPOSED_FIELDS
@@ -9,7 +10,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     [SerializeField] private ChatScreen chatScreen = null;
 
     [Header("Players")]
-    [SerializeField] private PlayerHandler player = null;
+    [SyncField][SerializeField] private PlayerHandler player = null;
 
     [Header("Game Configurations")]
     [SerializeField] private MovableCube cubePrefab = null;

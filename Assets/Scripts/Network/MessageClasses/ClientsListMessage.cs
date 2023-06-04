@@ -95,7 +95,7 @@ public class ClientsListMessage : SemiTcpMessage, IMessage<((int, long, float, V
 
     public static int GetHeaderSize()
     {
-        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
+        return sizeof(bool) + sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
     }
 
     public override MessageTail GetMessageTail()

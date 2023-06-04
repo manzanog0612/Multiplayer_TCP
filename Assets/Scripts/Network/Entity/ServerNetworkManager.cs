@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
@@ -13,7 +14,7 @@ public class ServerNetworkManager : NetworkManager
 
     private Dictionary<int, double> clientsLatencies = new Dictionary<int, double>();
 
-    private bool debug = false;
+    private bool debug = true;
 
     private bool sendResendDataWrong = false;
     private bool sendDisconnectClientWrong = false;
@@ -188,15 +189,26 @@ public class ServerNetworkManager : NetworkManager
         SendDataUpdate();
     }
 
-    protected override void SendData(byte[] data)
+    protected override void SendData(object data)
     {
-        if (IsTcpConnection)
+        byte[] castedData = null;
+
+        if (data is byte[])
         {
-            TcpBroadcast(data);
+            castedData = data as byte[];
         }
         else
         {
-            UdpBroadcast(data);
+            castedData = (data as ReflectionMessage).Data.ToArray();
+        }
+
+        if (IsTcpConnection)
+        {
+            TcpBroadcast(castedData);
+        }
+        else
+        {
+            UdpBroadcast(castedData);
         }
     }
 
@@ -219,6 +231,18 @@ public class ServerNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
+    protected override void ProcessReflectionMessage(IPEndPoint ip, byte[] data)
+    {
+        base.ProcessReflectionMessage(ip, data);
+
+        int clientId = BitConverter.ToInt32(data, sizeof(bool));
+
+        if (clients.ContainsKey(clientId))
+        {
+            SendToSpecificClient(data, clients[clientId].ipEndPoint);
+        }
+    }
+
     protected override void ProcessResendData(IPEndPoint ip, byte[] data)
     {
         MESSAGE_TYPE messageTypeToResend = ResendDataMessage.Deserialize(data);

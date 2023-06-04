@@ -31,7 +31,7 @@ public class ResendDataMessage : SemiTcpMessage, IMessage<MESSAGE_TYPE>
 
     public static int GetHeaderSize()
     {
-        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
+        return sizeof(bool) + sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int);
     }
 
     public override MessageTail GetMessageTail()

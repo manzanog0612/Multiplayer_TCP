@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using UnityEngine;
 
@@ -46,8 +47,8 @@ public class ClientNetworkManager : NetworkManager
 
         udpConnection = new UdpConnection(ip, port, this);
 
-        //SendHandShake();
-        SendConnectRequest();
+        SendHandShake();
+       // SendConnectRequest();
 
         onDefineIsServer?.Invoke(isServer);
 
@@ -95,6 +96,72 @@ public class ClientNetworkManager : NetworkManager
     #endregion
 
     #region DATA_RECEIVE_PROCESS
+    protected override void ProcessReflectionMessage(IPEndPoint ip, byte[] data)
+    {
+        base.ProcessReflectionMessage(ip, data);
+
+        int clientId = ReflectionMessageFormater.GetClientId(data);
+        int datasAmount = ReflectionMessageFormater.GetDatasAmount(data);
+
+        int offset = sizeof(bool) + sizeof(int) * 2;
+
+        for (int i = 0; i < datasAmount; i++)
+        {
+            int sizeOfName = BitConverter.ToInt32(data, offset);
+            offset += sizeof(int);
+
+            string name = string.Empty;
+
+            for (int j = 0; j < sizeOfName * sizeof(char); j+=sizeof(char))
+            {            
+                char c = BitConverter.ToChar(data, offset);
+                name += c;
+                offset += sizeof(char);
+            }
+
+            Debug.Log(name);
+
+            VALUE_TYPE valueType = (VALUE_TYPE)BitConverter.ToInt32(data, offset);
+            offset += sizeof(int);
+
+            switch (valueType)
+            {
+                case VALUE_TYPE.INT:
+                    int intValue = BitConverter.ToInt32(data, offset);
+                    offset += sizeof(int);
+                    break;
+                case VALUE_TYPE.FLOAT:
+                    float floatValue = BitConverter.ToSingle(data, offset);
+                    offset += sizeof(float);
+                    break;
+                case VALUE_TYPE.DOUBLE:
+                    double doubleValue = BitConverter.ToDouble(data, offset);
+                    offset += sizeof(double);
+                    break;
+                case VALUE_TYPE.CHAR:
+                    char charValue = BitConverter.ToChar(data, offset);
+                    offset += sizeof(char);
+                    break;
+                case VALUE_TYPE.BOOL:
+                    bool boolValue = BitConverter.ToBoolean(data, offset);
+                    offset += sizeof(bool);
+                    break;
+                case VALUE_TYPE.VECTOR3:
+                    Vector3 vector3Value = Vector3.zero;
+
+                    vector3Value.x = BitConverter.ToSingle(data, offset);
+                    vector3Value.y = BitConverter.ToSingle(data, offset + sizeof(float));
+                    vector3Value.z = BitConverter.ToSingle(data, offset + sizeof(float) * 2);
+                    offset += sizeof(float) * 3;
+
+                    Debug.Log(vector3Value.ToString());
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
     protected override void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
     {
         base.ProcessSync(clientConnectionData, data);
@@ -202,7 +269,6 @@ public class ClientNetworkManager : NetworkManager
     {
         PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
         byte[] data = playerDataMessage.Serialize(admissionTimeStamp);
-        //SendData(data);
 
         MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
 
@@ -237,8 +303,6 @@ public class ClientNetworkManager : NetworkManager
         ResendDataMessage resendDataMessage = new ResendDataMessage(messageType);
 
         byte[] data = resendDataMessage.Serialize(admissionTimeStamp);
-
-        // SendData(data);
 
         SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, latency * latencyMultiplier);
 
@@ -361,21 +425,32 @@ public class ClientNetworkManager : NetworkManager
     #endregion
 
     #region AUX
-    protected override void SendData(byte[] data)
+    [SyncMethod] protected override void SendData(object data)
     {
-        if (IsTcpConnection)
+        byte[] castedData = null;
+
+        if (data is byte[])
         {
-            SendToTcpServer(data);
+            castedData = data as byte[];
         }
         else
         {
-            SendToUdpServer(data);
+            castedData = (data as ReflectionMessage).Data.ToArray();
+        }
+
+        if (IsTcpConnection)
+        {
+            SendToTcpServer(castedData);
+        }
+        else
+        {
+            SendToUdpServer(castedData);
         }
     }
 
     private float RandNum()
     {
-        return Random.Range(0f, 1f);
+        return UnityEngine.Random.Range(0f, 1f);
     }
     #endregion
 }

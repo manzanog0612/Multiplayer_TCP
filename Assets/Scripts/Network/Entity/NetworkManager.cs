@@ -52,41 +52,50 @@ public class NetworkManager : IReceiveData
 
     public virtual void OnReceiveData(byte[] data, IPEndPoint ip)
     {
-        MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
-        float timeStamp = MessageFormater.GetAdmissionTime(data);
+        bool isReflectionMessage = MessageFormater.IsReflectionMessage(data);
 
-        switch (messageType)
+        if (isReflectionMessage)
         {
-            case MESSAGE_TYPE.SYNC:
-                ProcessSync((ip, timeStamp), data);
-                break;
-            case MESSAGE_TYPE.RESEND_DATA:
-                ProcessResendData(ip, data);
-                break;
-            case MESSAGE_TYPE.SERVER_DATA_UPDATE:
-                ProcessServerDataUpdate(ip, data);
-                break;
-            case MESSAGE_TYPE.SERVER_ON:
-                ProcessServerOn(ip, data);
-                break;
-            case MESSAGE_TYPE.CONNECT_REQUEST:
-                ProcessConnectRequest(ip, data);
-                break;
-            case MESSAGE_TYPE.ENTITY_DISCONECT:
-                ProcessEntityDisconnect(ip, data);
-                break;
-            case MESSAGE_TYPE.HAND_SHAKE:
-                ProcessHandShake((ip, timeStamp), data);
-                break;
-            case MESSAGE_TYPE.CLIENTS_LIST:
-                ProcessClientList(data);
-                break;
-            case MESSAGE_TYPE.STRING:
-            case MESSAGE_TYPE.VECTOR3:
-                ProcessGameMessage((ip, timeStamp), data, messageType);
-                break;
-            default:
-                break;
+            ProcessReflectionMessage(ip, data);
+        }
+        else
+        {
+            MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
+            float timeStamp = MessageFormater.GetAdmissionTime(data);
+
+            switch (messageType)
+            {
+                case MESSAGE_TYPE.SYNC:
+                    ProcessSync((ip, timeStamp), data);
+                    break;
+                case MESSAGE_TYPE.RESEND_DATA:
+                    ProcessResendData(ip, data);
+                    break;
+                case MESSAGE_TYPE.SERVER_DATA_UPDATE:
+                    ProcessServerDataUpdate(ip, data);
+                    break;
+                case MESSAGE_TYPE.SERVER_ON:
+                    ProcessServerOn(ip, data);
+                    break;
+                case MESSAGE_TYPE.CONNECT_REQUEST:
+                    ProcessConnectRequest(ip, data);
+                    break;
+                case MESSAGE_TYPE.ENTITY_DISCONECT:
+                    ProcessEntityDisconnect(ip, data);
+                    break;
+                case MESSAGE_TYPE.HAND_SHAKE:
+                    ProcessHandShake((ip, timeStamp), data);
+                    break;
+                case MESSAGE_TYPE.CLIENTS_LIST:
+                    ProcessClientList(data);
+                    break;
+                case MESSAGE_TYPE.STRING:
+                case MESSAGE_TYPE.VECTOR3:
+                    ProcessGameMessage((ip, timeStamp), data, messageType);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -169,7 +178,7 @@ public class NetworkManager : IReceiveData
         Debug.Log("RESENDING DATA " + (int)messageType);
     }
 
-    protected virtual void SendData(byte[] data)
+    protected virtual void SendData(object data)
     {
 
     }
@@ -182,6 +191,11 @@ public class NetworkManager : IReceiveData
         {
             Debug.Log("The message " + message + " was insane");
         }
+    }
+
+    protected virtual void ProcessReflectionMessage(IPEndPoint ip, byte[] data)
+    {
+
     }
 
     protected virtual void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 
@@ -302,6 +316,7 @@ public class NetworkManager : IReceiveData
                 }
                 break;
             case MESSAGE_TYPE.VECTOR3:
+                //OnReceiveGameEvent(clientConnectionData, data, messageType);
                 CheckIfMessageIdIsCorrect(clientConnectionData, data, messageType);
                 break;
             default:

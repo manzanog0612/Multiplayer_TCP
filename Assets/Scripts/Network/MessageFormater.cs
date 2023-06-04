@@ -3,13 +3,18 @@ using System;
 public static class MessageFormater
 {
     #region CONSTANTS
-    private const int sendTimeStart = 0;
-    private const int messageTypeStart = sizeof(int) * 5;
+    private const int isReflectionMessageStart = 0;
+    private const int sendTimeStart = sizeof(bool);
+    private const int messageTypeStart = sendTimeStart + sizeof(int) * 5;
     private const int admissionTimeStart = messageTypeStart + sizeof(int);
     private const int messageIdStart = admissionTimeStart + sizeof(float);
     #endregion
 
     #region PUBLIC_METHODS
+    public static bool IsReflectionMessage(byte[] data)
+    {
+        return BitConverter.ToBoolean(data, isReflectionMessageStart);
+    }
 
     public static (int days, int hours, int minutes, int seconds, int millisecond) GetMessageSendTime(byte[] data)
     {

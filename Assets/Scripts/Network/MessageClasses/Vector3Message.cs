@@ -60,7 +60,7 @@ public class Vector3Message : IMessage<Vector3>
 
     public static int GetHeaderSize()
     {
-        return sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
+        return sizeof(bool) + sizeof(int) * MessageHeader.amountIntsInSendTime + sizeof(int) + sizeof(float) + sizeof(int);
     }
 
     public static int GetMessageSize()

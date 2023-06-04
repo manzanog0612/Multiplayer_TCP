@@ -9,7 +9,7 @@ public class PlayerHandler : MonoBehaviour
 
     #region PRIVATE_FIELDS
     private bool initialized = false;
-    private PlayerData playerData = new PlayerData();
+    [SyncField] private PlayerData playerData = new PlayerData();
 
     private Vector3 movement = Vector3.zero;
     #endregion

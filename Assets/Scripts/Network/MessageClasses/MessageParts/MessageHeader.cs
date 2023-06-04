@@ -8,12 +8,13 @@ public class MessageHeader
     public float admissionTime = -1;
     public int lastMessageId = -1;
     public (int days, int hours, int minutes, int seconds, int millisecond) sendTime;
+    public bool isReflectionMessage = false;
 
     public static int amountIntsInSendTime = 5;
 
     public byte[] Bytes { get; private set; }
 
-    public MessageHeader(int messageType, float admissionTime, int lastMessageId)
+    public MessageHeader(int messageType, float admissionTime, int lastMessageId, bool isReflectionMessage = false)
     {
         this.messageType = messageType;
         this.admissionTime = admissionTime;
@@ -22,6 +23,7 @@ public class MessageHeader
 
         List<byte> bytes = new List<byte>();
 
+        bytes.AddRange(BitConverter.GetBytes(isReflectionMessage));
         bytes.AddRange(GetSendTimeBytes());
         bytes.AddRange(BitConverter.GetBytes(messageType));
         bytes.AddRange(BitConverter.GetBytes(admissionTime));
@@ -30,7 +32,7 @@ public class MessageHeader
         Bytes = bytes.ToArray();
     }
 
-    public MessageHeader(int messageType, float admissionTime)
+    public MessageHeader(int messageType, float admissionTime, bool isReflectionMessage = false)
     {
         this.messageType = messageType;
         this.admissionTime = admissionTime;
@@ -38,6 +40,7 @@ public class MessageHeader
 
         List<byte> bytes = new List<byte>();
 
+        bytes.AddRange(BitConverter.GetBytes(isReflectionMessage));
         bytes.AddRange(GetSendTimeBytes());
         bytes.AddRange(BitConverter.GetBytes(messageType));
         bytes.AddRange(BitConverter.GetBytes(admissionTime));
@@ -45,13 +48,14 @@ public class MessageHeader
         Bytes = bytes.ToArray();
     }
 
-    public MessageHeader(int messageType)
+    public MessageHeader(int messageType, bool isReflectionMessage = false)
     {
         this.messageType = messageType;
         sendTime = (DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, DateTime.UtcNow.Second, DateTime.UtcNow.Millisecond);
 
         List<byte> bytes = new List<byte>();
 
+        bytes.AddRange(BitConverter.GetBytes(isReflectionMessage));
         bytes.AddRange(GetSendTimeBytes());
         bytes.AddRange(BitConverter.GetBytes(messageType));
 
