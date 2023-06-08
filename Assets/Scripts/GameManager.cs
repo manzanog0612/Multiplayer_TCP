@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -32,6 +33,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
             NetworkManager.Instance.onRemoveClient -= OnRemoveClient;
+            NetworkManager.Instance.onReceiveGameEvent -= OnReceiveGameEvent;
         }
 
         if (DataHandler.Instance != null)
@@ -49,6 +51,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
         NetworkManager.Instance.onRemoveClient += OnRemoveClient;
+        NetworkManager.Instance.onReceiveGameEvent += OnReceiveGameEvent;
 
         chatScreen.onSendChat = OnSendChat;
 
@@ -108,6 +111,11 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             Destroy(playersSquares[id].gameObject);
             playersSquares.Remove(id);
         }
+    }
+
+    private void OnReceiveGameEvent(object data, int clientId, VALUE_TYPE valueType)
+    {
+        
     }
     #endregion
 }

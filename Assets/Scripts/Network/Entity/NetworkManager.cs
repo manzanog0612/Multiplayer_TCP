@@ -31,6 +31,7 @@ public class NetworkManager : IReceiveData
 
     #region ACTIONS
     public Action<byte[], IPEndPoint, int, MESSAGE_TYPE> onReceiveEvent = null;
+    public Action<object, int, VALUE_TYPE> onReceiveGameEvent = null;
     public Action onStartConnection = null;
     public Action<bool> onDefineIsServer = null;
     public Action<int, (long, float), Vector3, Color> onAddNewClient = null;

@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+
 using UnityEngine;
 
 public class ClientNetworkManager : NetworkManager
@@ -124,40 +125,45 @@ public class ClientNetworkManager : NetworkManager
             VALUE_TYPE valueType = (VALUE_TYPE)BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
 
+            object value = null;
+
             switch (valueType)
             {
                 case VALUE_TYPE.INT:
-                    int intValue = BitConverter.ToInt32(data, offset);
+                    value = BitConverter.ToInt32(data, offset);
                     offset += sizeof(int);
                     break;
                 case VALUE_TYPE.FLOAT:
-                    float floatValue = BitConverter.ToSingle(data, offset);
+                    value = BitConverter.ToSingle(data, offset);
                     offset += sizeof(float);
                     break;
                 case VALUE_TYPE.DOUBLE:
-                    double doubleValue = BitConverter.ToDouble(data, offset);
+                    value = BitConverter.ToDouble(data, offset);
                     offset += sizeof(double);
                     break;
                 case VALUE_TYPE.CHAR:
-                    char charValue = BitConverter.ToChar(data, offset);
+                    value = BitConverter.ToChar(data, offset);
                     offset += sizeof(char);
                     break;
                 case VALUE_TYPE.BOOL:
-                    bool boolValue = BitConverter.ToBoolean(data, offset);
+                    value = BitConverter.ToBoolean(data, offset);
                     offset += sizeof(bool);
                     break;
                 case VALUE_TYPE.VECTOR3:
                     Vector3 vector3Value = Vector3.zero;
-
                     vector3Value.x = BitConverter.ToSingle(data, offset);
                     vector3Value.y = BitConverter.ToSingle(data, offset + sizeof(float));
                     vector3Value.z = BitConverter.ToSingle(data, offset + sizeof(float) * 2);
+                    value = vector3Value;
                     offset += sizeof(float) * 3;
-
-                    Debug.Log(vector3Value.ToString());
                     break;
                 default:
                     break;
+            }
+
+            if (value != null)
+            {
+                onReceiveGameEvent.Invoke(value, clientId, valueType);
             }
         }
     }

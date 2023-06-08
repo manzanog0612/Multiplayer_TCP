@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ReflectionMessage
@@ -139,28 +140,21 @@ public class ReflectionHandler : MonoBehaviour
             return bytes;
         }
 
-        List<byte> bytes = new List<byte>();
-        bytes.AddRange(SerializeMessage());
-
         if (obj is int)
         {
-            bytes.AddRange(IntSerialization.Serialize(obj));
-            msgStack.Add(bytes);
+            msgStack.Add(((int)obj).Serialize(fieldName));
         }
         else if (obj is float)
         {
-            bytes.AddRange(FloatSerialization.Serialize(obj));
-            msgStack.Add(bytes);
+            msgStack.Add(((float)obj).Serialize(fieldName));
         }
         else if (obj is bool)
         {
-            bytes.AddRange(BoolSerialization.Serialize(obj));
-            msgStack.Add(bytes);
+            msgStack.Add(((bool)obj).Serialize(fieldName));
         }
         else if (obj is Vector3)
         {
-            bytes.AddRange(Vector3Serialization.Serialize(obj));
-            msgStack.Add(bytes);
+            msgStack.Add(((Vector3)obj).Serialize(fieldName));
         }
         else
         {
