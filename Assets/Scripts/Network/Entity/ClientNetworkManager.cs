@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-
 using UnityEngine;
 
 public class ClientNetworkManager : NetworkManager
@@ -101,71 +100,7 @@ public class ClientNetworkManager : NetworkManager
     {
         base.ProcessReflectionMessage(ip, data);
 
-        int clientId = ReflectionMessageFormater.GetClientId(data);
-        int datasAmount = ReflectionMessageFormater.GetDatasAmount(data);
-
-        int offset = sizeof(bool) + sizeof(int) * 2;
-
-        for (int i = 0; i < datasAmount; i++)
-        {
-            int sizeOfName = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-
-            string name = string.Empty;
-
-            for (int j = 0; j < sizeOfName * sizeof(char); j+=sizeof(char))
-            {            
-                char c = BitConverter.ToChar(data, offset);
-                name += c;
-                offset += sizeof(char);
-            }
-
-            Debug.Log(name);
-
-            VALUE_TYPE valueType = (VALUE_TYPE)BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-
-            object value = null;
-
-            switch (valueType)
-            {
-                case VALUE_TYPE.INT:
-                    value = BitConverter.ToInt32(data, offset);
-                    offset += sizeof(int);
-                    break;
-                case VALUE_TYPE.FLOAT:
-                    value = BitConverter.ToSingle(data, offset);
-                    offset += sizeof(float);
-                    break;
-                case VALUE_TYPE.DOUBLE:
-                    value = BitConverter.ToDouble(data, offset);
-                    offset += sizeof(double);
-                    break;
-                case VALUE_TYPE.CHAR:
-                    value = BitConverter.ToChar(data, offset);
-                    offset += sizeof(char);
-                    break;
-                case VALUE_TYPE.BOOL:
-                    value = BitConverter.ToBoolean(data, offset);
-                    offset += sizeof(bool);
-                    break;
-                case VALUE_TYPE.VECTOR3:
-                    Vector3 vector3Value = Vector3.zero;
-                    vector3Value.x = BitConverter.ToSingle(data, offset);
-                    vector3Value.y = BitConverter.ToSingle(data, offset + sizeof(float));
-                    vector3Value.z = BitConverter.ToSingle(data, offset + sizeof(float) * 2);
-                    value = vector3Value;
-                    offset += sizeof(float) * 3;
-                    break;
-                default:
-                    break;
-            }
-
-            if (value != null)
-            {
-                onReceiveGameEvent.Invoke(value, clientId, valueType);
-            }
-        }
+        onReceiveReflectionData?.Invoke(data);
     }
 
     protected override void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
@@ -431,26 +366,27 @@ public class ClientNetworkManager : NetworkManager
     #endregion
 
     #region AUX
-    [SyncMethod] protected override void SendData(object data)
+    [SyncMethod] private void SendData2(object data)
     {
-        byte[] castedData = null;
-
-        if (data is byte[])
-        {
-            castedData = data as byte[];
-        }
-        else
-        {
-            castedData = (data as ReflectionMessage).Data.ToArray();
-        }
-
         if (IsTcpConnection)
         {
-            SendToTcpServer(castedData);
+            SendToTcpServer(data as byte[]);
         }
         else
         {
-            SendToUdpServer(castedData);
+            SendToUdpServer(data as byte[]);
+        }
+    }
+
+    protected override void SendData(byte[] data)
+    {
+        if (IsTcpConnection)
+        {
+            SendToTcpServer(data);
+        }
+        else
+        {
+            SendToUdpServer(data);
         }
     }
 

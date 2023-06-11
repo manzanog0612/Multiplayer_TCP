@@ -31,12 +31,12 @@ public class NetworkManager : IReceiveData
 
     #region ACTIONS
     public Action<byte[], IPEndPoint, int, MESSAGE_TYPE> onReceiveEvent = null;
-    public Action<object, int, VALUE_TYPE> onReceiveGameEvent = null;
     public Action onStartConnection = null;
     public Action<bool> onDefineIsServer = null;
     public Action<int, (long, float), Vector3, Color> onAddNewClient = null;
     public Action<int> onRemoveClient = null;
     public Action<int> onSync = null;
+    public Action<byte[]> onReceiveReflectionData = null;
     #endregion
 
     #region CONSTANTS
@@ -179,7 +179,7 @@ public class NetworkManager : IReceiveData
         Debug.Log("RESENDING DATA " + (int)messageType);
     }
 
-    protected virtual void SendData(object data)
+    protected virtual void SendData(byte[] data)
     {
 
     }
@@ -196,7 +196,7 @@ public class NetworkManager : IReceiveData
 
     protected virtual void ProcessReflectionMessage(IPEndPoint ip, byte[] data)
     {
-
+       
     }
 
     protected virtual void ProcessSync((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data) 

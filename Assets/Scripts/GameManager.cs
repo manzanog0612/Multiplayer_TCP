@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -11,11 +10,17 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     [SerializeField] private ChatScreen chatScreen = null;
 
     [Header("Players")]
-    [SyncField][SerializeField] private PlayerHandler player = null;
+    [SerializeField] private PlayerHandler player = null;
+    private int id = 1;
+    [SyncField] private Dictionary<int, string> dic = new Dictionary<int, string>();
+    [SyncField] private List<char> list = new List<char>();
+    [SyncField] private Queue<char> queue = new Queue<char>();
+    [SyncField] private Stack<char> stack = new Stack<char>();
 
     [Header("Game Configurations")]
     [SerializeField] private MovableCube cubePrefab = null;
     [SerializeField] private Transform cubesHolder = null;
+
     #endregion
 
     #region PRIVATE_FIELDS
@@ -33,7 +38,6 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             NetworkManager.Instance.onStartConnection -= OnStartConnection;
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
             NetworkManager.Instance.onRemoveClient -= OnRemoveClient;
-            NetworkManager.Instance.onReceiveGameEvent -= OnReceiveGameEvent;
         }
 
         if (DataHandler.Instance != null)
@@ -51,12 +55,27 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
         NetworkManager.Instance.onRemoveClient += OnRemoveClient;
-        NetworkManager.Instance.onReceiveGameEvent += OnReceiveGameEvent;
 
         chatScreen.onSendChat = OnSendChat;
 
         player.Init(DataHandler.Instance.SendPlayerData);
         player.gameObject.SetActive(false);
+
+        dic.Add(0, "aaa");
+        dic.Add(1, "bbb");
+        dic.Add(2, "ccc");
+
+        list.Add('a');
+        list.Add('b');
+        list.Add('c');
+
+        queue.Enqueue('d');
+        queue.Enqueue('e');
+        queue.Enqueue('f');
+
+        stack.Push('g');
+        stack.Push('h');
+        stack.Push('i');
     }
     #endregion
 
@@ -111,11 +130,6 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             Destroy(playersSquares[id].gameObject);
             playersSquares.Remove(id);
         }
-    }
-
-    private void OnReceiveGameEvent(object data, int clientId, VALUE_TYPE valueType)
-    {
-        
     }
     #endregion
 }

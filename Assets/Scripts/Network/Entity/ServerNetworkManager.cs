@@ -189,26 +189,15 @@ public class ServerNetworkManager : NetworkManager
         SendDataUpdate();
     }
 
-    protected override void SendData(object data)
+    protected override void SendData(byte[] data)
     {
-        byte[] castedData = null;
-
-        if (data is byte[])
-        {
-            castedData = data as byte[];
-        }
-        else
-        {
-            castedData = (data as ReflectionMessage).Data.ToArray();
-        }
-
         if (IsTcpConnection)
         {
-            TcpBroadcast(castedData);
+            TcpBroadcast(data);
         }
         else
         {
-            UdpBroadcast(castedData);
+            UdpBroadcast(data);
         }
     }
 
