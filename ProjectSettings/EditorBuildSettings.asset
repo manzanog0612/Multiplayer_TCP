@@ -8,10 +8,16 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/Client.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Server.unity
     guid: 79ebe7eda95648644b8a12b1ca8252ed
   - enabled: 0
     path: Assets/Scenes/MatchMaker.unity
     guid: 140352d95ab5a8444ad660158f9f88c9
+  - enabled: 1
+    path: Assets/Game/_Scenes/Login.unity
+    guid: 73535444a9b80bf4ebf370b18e316601
+  - enabled: 1
+    path: Assets/Game/_Scenes/RoomSelection.unity
+    guid: 2345956ddca388c43919f01041903eba
   m_configObjects: {}
