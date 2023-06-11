@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using MultiplayerLibrary.Reflection.Attributes;
+using MultiplayerLibrary.Entity;
+
 [SyncNode]
 public class GameManager : MonoBehaviourSingleton<GameManager>
 {
@@ -11,7 +14,6 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 
     [Header("Players")]
     [SerializeField] private PlayerHandler player = null;
-    private int id = 1;
     [SyncField] private Dictionary<int, string> dic = new Dictionary<int, string>();
     [SyncField] private List<char> list = new List<char>();
     [SyncField] private Queue<char> queue = new Queue<char>();
@@ -39,18 +41,12 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             NetworkManager.Instance.onAddNewClient -= OnAddNewClient;
             NetworkManager.Instance.onRemoveClient -= OnRemoveClient;
         }
-
-        if (DataHandler.Instance != null)
-        {
-            DataHandler.Instance.onReceiveData -= OnReceivePlayerData;
-        }
     }
     #endregion
 
     #region INITIALIZATION
     protected override void Initialize()
     {
-        DataHandler.Instance.onReceiveData += OnReceivePlayerData;
         NetworkManager.Instance.onDefineIsServer += OnDefineIsServer;
         NetworkManager.Instance.onStartConnection += OnStartConnection;
         NetworkManager.Instance.onAddNewClient += OnAddNewClient;
@@ -58,7 +54,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 
         chatScreen.onSendChat = OnSendChat;
 
-        player.Init(DataHandler.Instance.SendPlayerData);
+        player.Init();
         player.gameObject.SetActive(false);
 
         dic.Add(0, "aaa");
@@ -103,20 +99,18 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         }
     }
 
-    private void OnReceivePlayerData(PlayerData playerData)
-    {
-        chatScreen.AddText(playerData.message);
-
-        if (!playerData.IdIsVoid() && playerData.movement != null)
-        {
-            playersSquares[playerData.id].SetPosition(playerData.position);
-        }
-    }
+    //private void OnReceivePlayerData(PlayerData playerData)
+    //{
+    //    chatScreen.AddText(playerData.message);
+    //
+    //    if (!playerData.IdIsVoid() && playerData.movement != null)
+    //    {
+    //        playersSquares[playerData.id].SetPosition(playerData.position);
+    //    }
+    //}
 
     private void OnSendChat(string chat)
     {
-        player.SendChat(chat);
-
         if (isServer)
         {
             chatScreen.AddText(chat);
