@@ -20,4 +20,13 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/_Scenes/RoomSelection.unity
     guid: 2345956ddca388c43919f01041903eba
+  - enabled: 1
+    path: Assets/Game/_Scenes/MatchConfiguration.unity
+    guid: 6d11a4aa36ffdbf459457c7b588f5dba
+  - enabled: 1
+    path: Assets/Game/_Scenes/WaitRoom.unity
+    guid: 1670a0978285af54aacce78949800a8b
+  - enabled: 1
+    path: Assets/Game/_Scenes/Match.unity
+    guid: 9b8a4e3e08c2df04b92b5e4761320325
   m_configObjects: {}
