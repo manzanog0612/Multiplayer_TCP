@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class PlayerHandler : MonoBehaviour
@@ -9,13 +8,8 @@ public class PlayerHandler : MonoBehaviour
 
     #region PRIVATE_FIELDS
     private bool initialized = false;
-    private PlayerData playerData = new PlayerData();
 
     private Vector3 movement = Vector3.zero;
-    #endregion
-
-    #region ACTIONS
-    private Action<PlayerData> onChangePlayerData = null;
     #endregion
 
     #region UNITY_CALLS
@@ -35,17 +29,9 @@ public class PlayerHandler : MonoBehaviour
     #endregion
 
     #region PUBLIC_METHODS
-    public void Init(Action<PlayerData> onChangePlayerData)
+    public void Init()
     {
-        this.onChangePlayerData = onChangePlayerData;
-
         initialized = true;
-    }
-
-    public void SendChat(string message)
-    {
-        playerData.message = message;
-        onChangePlayerData.Invoke(playerData);
     }
     #endregion
 
@@ -86,17 +72,12 @@ public class PlayerHandler : MonoBehaviour
     {
         if (movement != Vector3.zero)
         {
-            playerData.movement = movement;
-            playerData.position += movement;
-            onChangePlayerData.Invoke(playerData);
         }
     }
 
     private void ResetData()
     {
         movement = Vector3.zero;
-        playerData.movement = null;
-        playerData.message = null;
     }
     #endregion
 }

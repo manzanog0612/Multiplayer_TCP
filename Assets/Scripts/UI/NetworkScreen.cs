@@ -3,6 +3,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+using MultiplayerLibrary;
+using MultiplayerLibrary.Entity;
+
 public class NetworkScreen : MonoBehaviourSingleton<NetworkScreen>
 {
     #region EXPOSED_FIELDS
