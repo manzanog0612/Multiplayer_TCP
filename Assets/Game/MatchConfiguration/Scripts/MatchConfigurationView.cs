@@ -56,7 +56,7 @@ namespace Game.MatchConfiguration
         {
             int matchTime = numbers[0] * 600 + numbers[1] * 60 + numbers[2] * 10 + numbers[3];
 
-            RoomData roomData = new RoomData(-1, 0, playerNumber.ActualNum, matchTime, false);
+            RoomData roomData = new RoomData(-1, 0, playerNumber.ActualNum, matchTime);
 
             onAccept.Invoke(roomData);
         }

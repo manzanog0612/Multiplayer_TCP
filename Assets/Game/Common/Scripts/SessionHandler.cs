@@ -1,4 +1,5 @@
 using Game.Common.Player;
+using MultiplayerLibrary.Entity;
 
 namespace Game.Common
 {

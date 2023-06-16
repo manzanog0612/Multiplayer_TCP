@@ -2,6 +2,8 @@ using UnityEngine;
 
 using Game.Common;
 using Game.RoomSelection.RoomsView;
+using MultiplayerLibrary;
+using System.Net;
 
 namespace Game.MatchConfiguration
 {
@@ -28,7 +30,10 @@ namespace Game.MatchConfiguration
 
         private void OnAccept(RoomData roomData)
         {
-            //create server with created data
+            IPAddress ipAddress = IPAddress.Parse(MatchMaker.ip);
+            int port = MatchMaker.matchMakerPort;
+
+            clientHandler.StartClient(ipAddress, port, new RoomData(-1, 0, roomData.PlayersMax, roomData.MatchTime));
 
             Debug.Log("room data created with " + roomData.MatchTime + " matchTime & " + roomData.PlayersMax + " maxPlayers");
 

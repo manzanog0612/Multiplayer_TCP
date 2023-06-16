@@ -1,3 +1,4 @@
+using Game.Common.Networking;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,6 +10,7 @@ namespace Game.Common
     {
         #region PROTECTED_FIELDS
         protected SessionHandler sessionHandler = null;
+        protected ClientHandler clientHandler = null;
         #endregion
 
         #region UNITY_CALLS
@@ -22,6 +24,7 @@ namespace Game.Common
         protected virtual void Init()
         {
             sessionHandler = FindObjectOfType<SessionHandler>();
+            clientHandler = FindObjectOfType<ClientHandler>();
         }
 
         protected void ChangeScene(SCENES scene)

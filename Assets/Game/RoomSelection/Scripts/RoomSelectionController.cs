@@ -4,6 +4,9 @@ using UnityEngine;
 
 using Game.Common;
 using Game.RoomSelection.RoomsView;
+using MultiplayerLibrary.Entity;
+using MultiplayerLibrary;
+using System.Net;
 
 namespace Game.RoomSelection
 {
@@ -21,7 +24,7 @@ namespace Game.RoomSelection
             roomSelectionView.Init(OnGoBack, OnEnterRoom, OnCreateRoom);
 
             //get roomDatas from matchMaker
-            RoomData roomData = new RoomData(0, 0, 2, 0, false);
+            RoomData roomData = new RoomData(0, 0, 2, 0);
 
             roomSelectionView.CreateRoomViews(new List<RoomData> { roomData });
         }
@@ -39,7 +42,10 @@ namespace Game.RoomSelection
             
             if (selectedRoomData != null)
             {
-                //enviar al matchMaker el pedido de entrar al server de id selectedRoomData.Id
+                IPAddress ipAddress = IPAddress.Parse(MatchMaker.ip);
+                int port = MatchMaker.matchMakerPort;
+
+                clientHandler.StartClient(ipAddress, port, new RoomData(selectedRoomData.Id, selectedRoomData.PlayersIn, selectedRoomData.PlayersMax, selectedRoomData.MatchTime));
 
                 ChangeScene(SCENES.WAIT_ROOM);
             }
