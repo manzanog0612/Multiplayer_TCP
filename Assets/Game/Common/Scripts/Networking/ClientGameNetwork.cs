@@ -1,9 +1,11 @@
 using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
+using MultiplayerLibrary;
 using MultiplayerLibrary.Entity;
 using MultiplayerLibrary.Interfaces;
 using MultiplayerLibrary.Message;
 using MultiplayerLibrary.Message.Formater;
+using MultiplayerLibrary.Network.Message.Constants;
 using System;
 using System.Net;
 
@@ -13,13 +15,14 @@ namespace Game.Common.Networking
     {
         #region ACTIONS
         private Action<RoomData[]> onReceiveRoomDatas = null;
+        private Action onFullRoom = null;
         #endregion
 
         #region OVERRIDE_METHODS
         public override void OnReceiveData(byte[] data, IPEndPoint ip)
-        {
+        {            
             base.OnReceiveData(data, ip);
-
+            
             bool isReflectionMessage = MessageFormater.IsReflectionMessage(data);
 
             if (isReflectionMessage)
@@ -42,9 +45,6 @@ namespace Game.Common.Networking
         #region DATA_RECEIVE_PROCESS
         protected override void ProcessRoomDatasMessage(IPEndPoint ip, byte[] data)
         {
-            RoomsDataMessage roomDatasRequest = new RoomsDataMessage(RoomsDataMessage.Deserialize(data));
-            HandleMessageError(data, (int)MESSAGE_TYPE.ROOM_DATAS, roomDatasRequest, roomDatasRequest.GetMessageSize(), RoomsDataMessage.GetHeaderSize());
-
             if (!wasLastMessageSane)
             {
                 SendResendDataMessage((int)MESSAGE_TYPE.ROOM_DATAS, ip);
@@ -55,6 +55,28 @@ namespace Game.Common.Networking
 
             onReceiveRoomDatas?.Invoke(roomDatas);
         }
+
+        protected override void ProcessNoticeMessage(IPEndPoint ip, byte[] data)
+        {
+            if (!wasLastMessageSane)
+            {
+                SendResendDataMessage((int)MESSAGE_TYPE.NOTICE, ip);
+                return;
+            }
+
+            NOTICE notice = (NOTICE)NoticeMessage.Deserialize(data);
+
+            switch (notice)
+            {
+                case NOTICE.ROOM_REQUEST:
+                    break;
+                case NOTICE.FULL_ROOM:
+                    onFullRoom.Invoke();
+                    break;
+                default:
+                    break;
+            }
+        }
         #endregion
 
         #region SEND_DATA_METHODS
@@ -62,10 +84,15 @@ namespace Game.Common.Networking
         {
             this.onReceiveRoomDatas = onReceiveRoomDatas;
 
-            RoomDatasRequestMessage roomsDataRequestMessage = new RoomDatasRequestMessage(0);
-            byte[] data = roomsDataRequestMessage.Serialize();
+            NoticeMessage noticeMessage = new NoticeMessage((int)NOTICE.ROOM_REQUEST);
+            byte[] data = noticeMessage.Serialize();
 
             SendData(data);
+        }
+
+        public void SetOnEnterRoom(Action onFullRoom)
+        {
+            this.onFullRoom = onFullRoom;
         }
         #endregion
     }

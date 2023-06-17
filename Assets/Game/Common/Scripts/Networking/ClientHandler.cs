@@ -57,14 +57,16 @@ namespace Game.Common.Networking
         public void StartMatchMakerConnection(RoomData roomData)
         {
             initialized = true;
-
+            //DEBUG comentar
             clientGameNetworkManager.SendConnectRequest(roomData);
+            //DEBUG descomentar
+            //clientGameNetworkManager.SendHandShake(); 
         }
 
         public void SendRoomsDataRequest(Action<RoomData[]> onReceiveRoomDatas)
         {
             initialized = true;
-
+            //DEBUG comentar
             clientGameNetworkManager.SendRoomDatasRequest(onReceiveRoomDatas);
         }
 
@@ -72,6 +74,11 @@ namespace Game.Common.Networking
         public void DisconectClient()
         {
             clientGameNetworkManager.DisconectClient();
+        }
+
+        public void SetOnEnterRoom(Action onFullRoom)
+        {
+            clientGameNetworkManager.SetOnEnterRoom(onFullRoom);
         }
         #endregion
     }

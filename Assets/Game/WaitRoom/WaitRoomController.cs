@@ -19,12 +19,12 @@ namespace Game.WaitRoom
         {
             base.Init();
 
-            
+            clientHandler.SetOnEnterRoom(OnGoToMatch);
         }
         #endregion
 
         #region PRIVATE_METHODS
-        private void OnPressStart()
+        private void OnGoToMatch()
         {
             ChangeScene(SCENES.MATCH);
         }
