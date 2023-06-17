@@ -30,10 +30,7 @@ namespace Game.MatchConfiguration
 
         private void OnAccept(RoomData roomData)
         {
-            IPAddress ipAddress = IPAddress.Parse(MatchMaker.ip);
-            int port = MatchMaker.matchMakerPort;
-
-            clientHandler.StartClient(ipAddress, port, new RoomData(-1, 0, roomData.PlayersMax, roomData.MatchTime));
+            clientHandler.StartMatchMakerConnection(new RoomData(-1, 0, roomData.PlayersMax, roomData.MatchTime));
 
             Debug.Log("room data created with " + roomData.MatchTime + " matchTime & " + roomData.PlayersMax + " maxPlayers");
 

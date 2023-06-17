@@ -43,7 +43,7 @@ namespace Game.RoomSelection
             roomViewsPool = new ObjectPool<RoomView>(CreateRoomView, OnGetRoomView, OnReleaseRoomView);
         }
 
-        public void CreateRoomViews(List<RoomData> roomDatas)
+        public void CreateRoomViews(RoomData[] roomDatas)
         {
             for (int i = 0; i < roomViews.Count; i++)
             {
@@ -52,7 +52,7 @@ namespace Game.RoomSelection
 
             roomViewsPool.Clear();
 
-            for (int i = 0; i < roomDatas.Count; i++)
+            for (int i = 0; i < roomDatas.Length; i++)
             {
                 RoomView roomView = roomViewsPool.Get();
                 roomView.Configure(roomDatas[i], OnSelectRoomView);

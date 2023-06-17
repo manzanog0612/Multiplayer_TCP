@@ -1,12 +1,6 @@
-using System.Collections.Generic;
-
-using UnityEngine;
-
 using Game.Common;
 using Game.RoomSelection.RoomsView;
-using MultiplayerLibrary.Entity;
-using MultiplayerLibrary;
-using System.Net;
+using UnityEngine;
 
 namespace Game.RoomSelection
 {
@@ -23,10 +17,13 @@ namespace Game.RoomSelection
 
             roomSelectionView.Init(OnGoBack, OnEnterRoom, OnCreateRoom);
 
-            //get roomDatas from matchMaker
-            RoomData roomData = new RoomData(0, 0, 2, 0);
+            clientHandler.StartClient();
 
-            roomSelectionView.CreateRoomViews(new List<RoomData> { roomData });
+            clientHandler.SendRoomsDataRequest(
+                onReceiveRoomDatas: (roomsDatas) =>
+                {
+                    roomSelectionView.CreateRoomViews(roomsDatas);
+                });
         }
         #endregion
 
@@ -42,10 +39,7 @@ namespace Game.RoomSelection
             
             if (selectedRoomData != null)
             {
-                IPAddress ipAddress = IPAddress.Parse(MatchMaker.ip);
-                int port = MatchMaker.matchMakerPort;
-
-                clientHandler.StartClient(ipAddress, port, new RoomData(selectedRoomData.Id, selectedRoomData.PlayersIn, selectedRoomData.PlayersMax, selectedRoomData.MatchTime));
+                clientHandler.StartMatchMakerConnection(new RoomData(selectedRoomData.Id, selectedRoomData.PlayersIn, selectedRoomData.PlayersMax, selectedRoomData.MatchTime));
 
                 ChangeScene(SCENES.WAIT_ROOM);
             }
