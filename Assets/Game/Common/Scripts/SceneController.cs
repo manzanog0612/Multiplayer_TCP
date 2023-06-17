@@ -24,7 +24,7 @@ namespace Game.Common
         protected virtual void Init()
         {
             sessionHandler = FindObjectOfType<SessionHandler>();
-            clientHandler = FindObjectOfType<ClientHandler>();
+            clientHandler = sessionHandler.ClientHandler;
         }
 
         protected void ChangeScene(SCENES scene)

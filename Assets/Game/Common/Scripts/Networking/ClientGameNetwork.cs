@@ -8,14 +8,17 @@ using MultiplayerLibrary.Message.Formater;
 using MultiplayerLibrary.Network.Message.Constants;
 using System;
 using System.Net;
+using UnityEngine;
 
 namespace Game.Common.Networking
 {
     public class ClientGameNetwork : ClientNetworkManager
     {
         #region ACTIONS
+        private Action<RoomData> onGetRoomData = null;
         private Action<RoomData[]> onReceiveRoomDatas = null;
         private Action onFullRoom = null;
+        private Action<int> onPlayersAmountChange = null;
         #endregion
 
         #region OVERRIDE_METHODS
@@ -43,6 +46,59 @@ namespace Game.Common.Networking
         #endregion
 
         #region DATA_RECEIVE_PROCESS
+
+        #region DEBUG
+        #endregion
+        protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
+        {
+            base.ProcessConnectRequest(ip, data);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            (long server, int port, RoomData roomData) room = ConnectRequestMessage.Deserialize(data);
+
+            onGetRoomData?.Invoke(room.roomData);
+        }
+
+        protected override void ProcessEntityDisconnect(IPEndPoint ip, byte[] data)
+        {
+            base.ProcessEntityDisconnect(ip, data);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            onPlayersAmountChange?.Invoke(clients.Count);
+        }
+
+        protected override void ProcessClientList(byte[] data)
+        {
+            base.ProcessClientList(data);
+        
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            onPlayersAmountChange?.Invoke(clients.Count);
+        }
+
+        protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
+        {
+            base.ProcessHandShake(clientConnectionData, data);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            onPlayersAmountChange?.Invoke(clients.Count);
+        }
+
         protected override void ProcessRoomDatasMessage(IPEndPoint ip, byte[] data)
         {
             if (!wasLastMessageSane)
@@ -90,9 +146,11 @@ namespace Game.Common.Networking
             SendData(data);
         }
 
-        public void SetOnEnterRoom(Action onFullRoom)
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange)
         {
+            this.onGetRoomData = onGetRoomData;
             this.onFullRoom = onFullRoom;
+            this.onPlayersAmountChange = onPlayersAmountChange;
         }
         #endregion
     }

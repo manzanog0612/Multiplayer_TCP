@@ -249,7 +249,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Players 0/1
+  m_text: Creating room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fb31a9e46922fd14aa8fa4e7e3074dbe, type: 2}
   m_sharedMaterial: {fileID: -555090749178903211, guid: fb31a9e46922fd14aa8fa4e7e3074dbe, type: 2}
@@ -577,6 +577,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 34
       objectReference: {fileID: 0}
+    - target: {fileID: 5222006939065008100, guid: 9e1aaea08927c0744bb7fddd37a5af27, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9e1aaea08927c0744bb7fddd37a5af27, type: 3}
 --- !u!224 &2017548524 stripped
@@ -601,6 +605,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac23027e67f9e124ca83e26c8c1d4738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  txtPlayers: {fileID: 1054449650}
 --- !u!114 &2017548527
 MonoBehaviour:
   m_ObjectHideFlags: 0

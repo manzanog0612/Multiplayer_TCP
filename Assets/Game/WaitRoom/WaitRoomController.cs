@@ -1,10 +1,5 @@
-using System.Collections.Generic;
-
-using UnityEngine;
-
 using Game.Common;
-using Game.RoomSelection.RoomsView;
-using Game.RoomSelection;
+using UnityEngine;
 
 namespace Game.WaitRoom
 {
@@ -19,7 +14,14 @@ namespace Game.WaitRoom
         {
             base.Init();
 
-            clientHandler.SetOnEnterRoom(OnGoToMatch);
+            sessionHandler.SetOnFullRoom(OnGoToMatch);
+            sessionHandler.SetOnPlayersAmountChange(
+                onPlayersAmountChange: () =>
+                {
+                    waitRoomView.SetPlayersText(sessionHandler.RoomData.PlayersIn, sessionHandler.RoomData.PlayersMax);
+                });
+
+                
         }
         #endregion
 

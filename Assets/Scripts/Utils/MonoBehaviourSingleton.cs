@@ -20,7 +20,7 @@ public class MonoBehaviourSingleton<T> : MonoBehaviour where T : MonoBehaviourSi
         DontDestroyOnLoad(gameObject);
     }
 
-    private void Start()
+    private void Awake()
     {
         Initialize();
     }

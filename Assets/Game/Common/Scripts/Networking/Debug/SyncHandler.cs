@@ -59,6 +59,8 @@ namespace MultiplayerLibrary.Entity
             NetworkManager.Instance.onStartConnection += OnStartConnection;
             NetworkManager.Instance.onAddNewClient += OnAddNewClient;
             NetworkManager.Instance.onSync += OnReceiveSync;
+
+            DontDestroyOnLoad(gameObject);
         }
 
         public void Update()

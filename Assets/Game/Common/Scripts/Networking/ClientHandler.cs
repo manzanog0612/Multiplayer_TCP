@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Game.Common.Networking
 {
-    public class ClientHandler : MonoBehaviourSingleton<ClientHandler>
+    public class ClientHandler : MonoBehaviour
     {
         #region EXPOSED_FIELDS
         [SerializeField] private ClientGameNetwork clientGameNetworkManager;
@@ -70,15 +70,14 @@ namespace Game.Common.Networking
             clientGameNetworkManager.SendRoomDatasRequest(onReceiveRoomDatas);
         }
 
-
         public void DisconectClient()
         {
             clientGameNetworkManager.DisconectClient();
         }
 
-        public void SetOnEnterRoom(Action onFullRoom)
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange)
         {
-            clientGameNetworkManager.SetOnEnterRoom(onFullRoom);
+            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange);
         }
         #endregion
     }

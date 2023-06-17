@@ -14,11 +14,11 @@ namespace Game.RoomSelection
         protected override void Init()
         {
             base.Init();
-
+            
             roomSelectionView.Init(OnGoBack, OnEnterRoom, OnCreateRoom);
-
+            
             clientHandler.StartClient();
-
+            
             clientHandler.SendRoomsDataRequest(
                 onReceiveRoomDatas: (roomsDatas) =>
                 {
@@ -36,7 +36,7 @@ namespace Game.RoomSelection
         private void OnEnterRoom()
         {
             RoomData selectedRoomData = roomSelectionView.SelectedRoomData;
-            
+            sessionHandler.SetRoomData(selectedRoomData);
             if (selectedRoomData != null)
             {
                 clientHandler.StartMatchMakerConnection(new RoomData(selectedRoomData.Id, selectedRoomData.PlayersIn, selectedRoomData.PlayersMax, selectedRoomData.MatchTime));
