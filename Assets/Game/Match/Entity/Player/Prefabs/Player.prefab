@@ -497,6 +497,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterMovement: {fileID: 1347821098511092187}
   animationController: {fileID: 1347821098511092191}
+  bodyRenderer: {fileID: 1347821098441825475}
 --- !u!114 &1347821098511092187
 MonoBehaviour:
   m_ObjectHideFlags: 0

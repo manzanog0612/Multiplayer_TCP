@@ -1,14 +1,13 @@
 using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
-using MultiplayerLibrary;
 using MultiplayerLibrary.Entity;
 using MultiplayerLibrary.Interfaces;
 using MultiplayerLibrary.Message;
 using MultiplayerLibrary.Message.Formater;
 using MultiplayerLibrary.Network.Message.Constants;
 using System;
+using System.Collections.Generic;
 using System.Net;
-using UnityEngine;
 
 namespace Game.Common.Networking
 {
@@ -19,6 +18,10 @@ namespace Game.Common.Networking
         private Action<RoomData[]> onReceiveRoomDatas = null;
         private Action onFullRoom = null;
         private Action<int> onPlayersAmountChange = null;
+        #endregion
+
+        #region ACTIONS
+        public Dictionary<int, Client> Clients { get => clients; }
         #endregion
 
         #region OVERRIDE_METHODS

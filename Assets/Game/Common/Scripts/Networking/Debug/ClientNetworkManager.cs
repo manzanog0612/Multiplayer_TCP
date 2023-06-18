@@ -22,6 +22,11 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region PUBLIC_METHODS
+        public double GetLatency()
+        {
+            return latency;
+        }
+
         public override void Update()
         {
             base.Update();

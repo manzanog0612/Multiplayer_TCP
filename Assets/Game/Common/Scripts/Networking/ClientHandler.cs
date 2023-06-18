@@ -2,6 +2,7 @@ using Game.RoomSelection.RoomsView;
 using MultiplayerLibrary;
 using MultiplayerLibrary.Entity;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
@@ -19,7 +20,9 @@ namespace Game.Common.Networking
 
         #region PROPERTIES
         public bool Initialized { get => initialized; }
-        public ClientGameNetwork ClientNetworkManager { get => clientGameNetworkManager; }
+        public Dictionary<int, Client> Clients { get => clientGameNetworkManager.Clients; }
+        public int ClientId { get => clientGameNetworkManager.assignedId; }
+        public Func<double> OnGetLatency { get => clientGameNetworkManager.GetLatency; }
         #endregion
 
         #region UNITY_CALLS

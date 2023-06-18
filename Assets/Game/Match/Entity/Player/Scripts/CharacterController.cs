@@ -1,123 +1,71 @@
-using System;
 using UnityEngine;
 
 namespace Game.Match.Entity.Player
 {
-    public class CharacterAction
-    {
-        public bool doAction = false;
-        public bool canDoAction = true;
-        public float actionCooldownTimer = 0;
-
-        public void SetAction(float coolDown)
-        {
-            doAction = true;
-            canDoAction = false;
-            actionCooldownTimer = coolDown;
-        }
-
-        public void UpdateCooldown(Action onFinishedCooldown)
-        {
-            if (canDoAction)
-            {
-                return;
-            }
-
-            if (actionCooldownTimer > 0)
-            {
-                actionCooldownTimer -= Time.fixedDeltaTime;
-            }
-            else
-            {
-                onFinishedCooldown?.Invoke();
-                canDoAction = true;
-            }
-        }
-    }
-
     public class CharacterController : MonoBehaviour
     {
         #region EXPOSED_FIELDS
         [SerializeField] private CharacterMovement characterMovement = null;
         [SerializeField] private AnimationController animationController = null;
+        [SerializeField] private SpriteRenderer bodyRenderer = null;
         #endregion
 
         #region PRIVATE_FIELDS
-        private Vector2 movement = Vector2.zero;
+        private CharacterAction hitAction = new CharacterAction();
+        #endregion
 
-        private CharacterAction hit = new CharacterAction();
+        #region PROPERTIES
+        public CharacterAction HitAction { get => hitAction; }
         #endregion
 
         #region CONSTANTS
         private float actionCooldown = 0.6f;
         #endregion
 
-        #region UNITY_CALLS
-        private void Update()
-        {
-            if (!Application.isFocused)
-            {
-                return;
-            }
-
-            DetectInput();
-        }
-
-        public void FixedUpdate()
-        {
-            Processinput();
-
-            ResetData();
-        }
-        #endregion
-
         #region PUBLIC_METHODS
-        public void Hit()
+        public void Init(Color color, Vector2 position)
         {
-            hit.doAction = false;
-            animationController.PlayHitAnim();
+            bodyRenderer.color = color;
+            characterMovement.SetPosition(position);
         }
-        #endregion
 
-        #region PRIVATE_METHODS
-        private void DetectInput()
+        public void DetectHitAction(bool input)
         {
-            movement = Vector2.zero;
-
-            movement.x = Input.GetAxisRaw("Horizontal");
-            movement.y = Input.GetAxisRaw("Vertical");
-
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (input)
             {
-                if (hit.canDoAction)
+                if (hitAction.canDoAction)
                 {
-                    hit.SetAction(actionCooldown);
-                    Debug.Log("HitStart");
+                    hitAction.SetAction(actionCooldown);
                 }
             }
             else
             {
-                hit.UpdateCooldown(animationController.PlayIdle);
+                hitAction.UpdateCooldown(animationController.PlayIdle);
             }
         }
 
-        private void Processinput()
+        public void ProcessHitAction()
         {
-            if (movement != Vector2.zero)
-            {
-                characterMovement.MoveCharacter(movement);
-            }
-
-            if (hit.doAction)
+            if (hitAction.doAction)
             {
                 Hit();
             }
         }
 
-        private void ResetData()
+        public void Hit()
         {
-            movement = Vector3.zero;
+            hitAction.doAction = false;
+            animationController.PlayHitAnim();
         }
+
+        public void Move(Vector2 movement)
+        {
+            characterMovement.MoveCharacter(movement);
+        }
+        #endregion
+
+        #region PRIVATE_METHODS
+        
         #endregion
     }
 }
