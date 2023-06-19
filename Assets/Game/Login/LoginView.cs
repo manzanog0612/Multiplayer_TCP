@@ -22,6 +22,8 @@ namespace Game.Login
             inputFieldPlayerName.onValueChanged.AddListener((s) => onPlayerNameChanged.Invoke(s));
 
             btnLogin.onClick.AddListener(() => onPlayerLogin.Invoke(inputFieldPlayerName.text));
+
+            onPlayerNameChanged.Invoke("ddddd");//debug
         }
 
         public void ToggleLoginButton(bool status)

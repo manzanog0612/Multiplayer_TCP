@@ -18,9 +18,9 @@ namespace Game.Common.Networking
         #endregion
 
         #region PUBLIC_METHODS
-        public static GAME_MESSAGE_TYPE GetMessageType(byte[] data)
+        public static GAME_REQUEST_TYPE GetMessageType(byte[] data)
         {
-            GAME_MESSAGE_TYPE messageType = (GAME_MESSAGE_TYPE)BitConverter.ToInt32(data, messageTypeStart);
+            GAME_REQUEST_TYPE messageType = (GAME_REQUEST_TYPE)BitConverter.ToInt32(data, messageTypeStart);
 
             return messageType;
         }

@@ -1,5 +1,6 @@
 using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
+using MultiplayerLib2.Network.Message;
 using MultiplayerLibrary.Entity;
 using MultiplayerLibrary.Interfaces;
 using MultiplayerLibrary.Message;
@@ -18,6 +19,7 @@ namespace Game.Common.Networking
         private Action<RoomData[]> onReceiveRoomDatas = null;
         private Action onFullRoom = null;
         private Action<int> onPlayersAmountChange = null;
+        private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         #endregion
 
         #region ACTIONS
@@ -37,7 +39,7 @@ namespace Game.Common.Networking
             }
             else
             {
-                GAME_MESSAGE_TYPE messageType = GameMessageFormater.GetMessageType(data);
+                GAME_REQUEST_TYPE messageType = GameMessageFormater.GetMessageType(data);
 
                 switch (messageType)
                 {
@@ -48,10 +50,17 @@ namespace Game.Common.Networking
         }
         #endregion
 
-        #region DATA_RECEIVE_PROCESS
-
-        #region DEBUG
+        #region PUBLIC_METHODS
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage)
+        {
+            this.onGetRoomData = onGetRoomData;
+            this.onFullRoom = onFullRoom;
+            this.onPlayersAmountChange = onPlayersAmountChange;
+            this.onReceiveGameMessage = onReceiveGameMessage;
+        }
         #endregion
+
+        #region DATA_RECEIVE_PROCESS
         protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
         {
             base.ProcessConnectRequest(ip, data);
@@ -104,6 +113,8 @@ namespace Game.Common.Networking
 
         protected override void ProcessRoomDatasMessage(IPEndPoint ip, byte[] data)
         {
+            base.ProcessRoomDatasMessage(ip, data);
+
             if (!wasLastMessageSane)
             {
                 SendResendDataMessage((int)MESSAGE_TYPE.ROOM_DATAS, ip);
@@ -136,9 +147,37 @@ namespace Game.Common.Networking
                     break;
             }
         }
+
+        protected override void ProcessGameMessage(IPEndPoint ip, byte[] data)
+        {
+            base.ProcessGameMessage(ip, data);
+
+            if (!wasLastMessageSane)
+            {
+                SendResendDataMessage((int)MESSAGE_TYPE.GAME_MESSAGE, ip);
+                return;
+            }
+
+            (int clientId, int message) = GameMessage.Deserialize(data);
+
+            if (!clients.ContainsKey(clientId))
+            {
+                return;
+            }
+
+            onReceiveGameMessage?.Invoke(clientId, (GAME_MESSAGE_TYPE)message);
+        }
         #endregion
 
         #region SEND_DATA_METHODS
+        public void SendGameMessage(GAME_MESSAGE_TYPE messageType)
+        {
+            GameMessage gameMessage = new GameMessage((assignedId, (int)messageType));
+            byte[] data = gameMessage.Serialize();
+
+            OnSendData(MESSAGE_TYPE.GAME_MESSAGE, data);
+        }
+
         public void SendRoomDatasRequest(Action<RoomData[]> onReceiveRoomDatas)
         {
             this.onReceiveRoomDatas = onReceiveRoomDatas;
@@ -146,14 +185,7 @@ namespace Game.Common.Networking
             NoticeMessage noticeMessage = new NoticeMessage((int)NOTICE.ROOM_REQUEST);
             byte[] data = noticeMessage.Serialize();
 
-            SendData(data);
-        }
-
-        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange)
-        {
-            this.onGetRoomData = onGetRoomData;
-            this.onFullRoom = onFullRoom;
-            this.onPlayersAmountChange = onPlayersAmountChange;
+            OnSendData(MESSAGE_TYPE.NOTICE, data);
         }
         #endregion
     }

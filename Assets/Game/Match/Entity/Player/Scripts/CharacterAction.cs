@@ -16,7 +16,7 @@ namespace Game.Match.Entity.Player
             actionCooldownTimer = coolDown;
         }
 
-        public void UpdateCooldown(Action onFinishedCooldown)
+        public void UpdateCooldown(Action onFinishedCooldown = null)
         {
             if (canDoAction)
             {

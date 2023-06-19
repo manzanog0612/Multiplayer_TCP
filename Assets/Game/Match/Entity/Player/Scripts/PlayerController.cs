@@ -1,5 +1,7 @@
+using Game.Common.Requests;
 using System;
 using System.Collections;
+using UnityEditor;
 using UnityEngine;
 
 namespace Game.Match.Entity.Player
@@ -13,6 +15,7 @@ namespace Game.Match.Entity.Player
 
         #region ACTIONS
         private Func<double> onGetLatency = null;
+        private Action<GAME_MESSAGE_TYPE> onSendMessage = null;
         #endregion
 
         #region UNITY_CALLS
@@ -35,10 +38,11 @@ namespace Game.Match.Entity.Player
         #endregion
 
         #region PUBLIC_METHODS
-        public void Init(CharacterController characterController, Func<double> onGetLatency)
+        public void Init(CharacterController characterController, Func<double> onGetLatency, Action<GAME_MESSAGE_TYPE> onSendMessage)
         {
             this.characterController = characterController;
             this.onGetLatency = onGetLatency;
+            this.onSendMessage = onSendMessage;
         }
         #endregion
 
@@ -60,7 +64,12 @@ namespace Game.Match.Entity.Player
                 characterController.Move(movement);
             }
 
-            StartCoroutine(DoAction(characterController.ProcessHitAction)); //it will only hit if the action was triggered
+            if (characterController.HitAction.doAction)
+            {
+                onSendMessage.Invoke(GAME_MESSAGE_TYPE.PLAYER_HIT);
+                characterController.HitAction.doAction = false;
+                StartCoroutine(DoAction(characterController.Hit));
+            }
         }
 
         private void ResetData()

@@ -8,6 +8,7 @@ using MultiplayerLibrary.Message.Parts;
 using MultiplayerLibrary.Message;
 using System.Collections.Generic;
 using System;
+using MultiplayerLib2.Network.Message;
 
 namespace MultiplayerLibrary.Entity
 {
@@ -105,6 +106,9 @@ namespace MultiplayerLibrary.Entity
                         break;
                     case MESSAGE_TYPE.NOTICE:
                         ProcessNoticeMessage(ip, data);
+                        break;
+                    case MESSAGE_TYPE.GAME_MESSAGE:
+                        ProcessGameMessage(ip, data);
                         break;
                     default:
                         break;
@@ -298,6 +302,12 @@ namespace MultiplayerLibrary.Entity
         {
             NoticeMessage roomDatasRequest = new NoticeMessage(NoticeMessage.Deserialize(data));
             HandleMessageError(data, (int)MESSAGE_TYPE.NOTICE, roomDatasRequest, NoticeMessage.GetMessageSize(), NoticeMessage.GetHeaderSize());
+        }
+
+        protected virtual void ProcessGameMessage(IPEndPoint ip, byte[] data)
+        {
+            GameMessage roomDatasRequest = new GameMessage(GameMessage.Deserialize(data));
+            HandleMessageError(data, (int)MESSAGE_TYPE.GAME_MESSAGE, roomDatasRequest, GameMessage.GetMessageSize(), GameMessage.GetHeaderSize());
         }
 
         protected virtual void ProcessChatMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)

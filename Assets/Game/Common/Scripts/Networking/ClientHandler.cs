@@ -1,3 +1,4 @@
+using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
 using MultiplayerLibrary;
 using MultiplayerLibrary.Entity;
@@ -73,14 +74,19 @@ namespace Game.Common.Networking
             clientGameNetworkManager.SendRoomDatasRequest(onReceiveRoomDatas);
         }
 
+        public void SendGameMessage(GAME_MESSAGE_TYPE messageType)
+        {
+            clientGameNetworkManager.SendGameMessage(messageType);
+        }
+
         public void DisconectClient()
         {
             clientGameNetworkManager.DisconectClient();
         }
 
-        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange)
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage)
         {
-            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange);
+            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage);
         }
         #endregion
     }

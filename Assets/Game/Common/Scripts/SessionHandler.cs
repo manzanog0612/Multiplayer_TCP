@@ -1,5 +1,6 @@
 using Game.Common.Networking;
 using Game.Common.Player;
+using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
 using System;
 using UnityEngine;
@@ -20,6 +21,7 @@ namespace Game.Common
         #region ACTIONS
         private Action onFullRoom = null;
         private Action onPlayersAmountChange = null;
+        private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         #endregion
 
         #region PROPERTIES
@@ -48,6 +50,11 @@ namespace Game.Common
         {
             this.onPlayersAmountChange = onPlayersAmountChange;
         }
+
+        public void SetOnReceiveGameMessage(Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage)
+        {
+            this.onReceiveGameMessage = onReceiveGameMessage;
+        }
         #endregion
 
         #region PRIVATE_METHODS
@@ -62,6 +69,11 @@ namespace Game.Common
 
             onPlayersAmountChange?.Invoke();
         }
+
+        private void OnReceiveGameMessage(int clientId, GAME_MESSAGE_TYPE messageType)
+        {
+            onReceiveGameMessage.Invoke(clientId, messageType);
+        }
         #endregion
 
         #region OVERRIDE_METHODS 
@@ -71,7 +83,7 @@ namespace Game.Common
 
             playerModel = new PlayerModel();
 
-            clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange);
+            clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage);
         }
         #endregion
     }

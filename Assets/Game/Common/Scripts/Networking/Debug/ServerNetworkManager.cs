@@ -259,6 +259,21 @@ namespace MultiplayerLibrary.Entity
         }
         #endregion
 
+        protected override void ProcessGameMessage(IPEndPoint ip, byte[] data)
+        {
+            base.ProcessGameMessage(ip, data);
+
+            if (!wasLastMessageSane)
+            {
+                SendResendDataMessage((int)MESSAGE_TYPE.GAME_MESSAGE, ip);
+                return;
+            }
+
+            SendData(data);
+
+            SaveSentMessage(MESSAGE_TYPE.GAME_MESSAGE, data, GetBiggerLatency() * latencyMultiplier);
+        }
+
         protected override void ProcessReflectionMessage(IPEndPoint ip, byte[] data)
         {
             base.ProcessReflectionMessage(ip, data);
@@ -267,7 +282,7 @@ namespace MultiplayerLibrary.Entity
 
             if (clients.ContainsKey(clientId))
             {
-                SendToSpecificClient(data, clients[clientId].ipEndPoint);
+                SendData(data);
             }
         }
 

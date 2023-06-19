@@ -35,7 +35,7 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region CONSTANTS
-        private const int kickTime = 15;
+        private const int kickTime = 9999999;//15
         private const int syncTime = 2;
         #endregion
 

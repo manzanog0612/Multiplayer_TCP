@@ -206,22 +206,6 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region SEND_DATA_METHODS
-        //FIX
-        //public void SendPlayerDataMessage(PlayerData playerData) //esto es horrible pero es para handlear lo que ya tenía, no tengo tiempo para arreglar arq ahora
-        //{
-        //    PlayerDataMessage playerDataMessage = new PlayerDataMessage(playerData);
-        //    byte[] data = playerDataMessage.Serialize(admissionTimeStamp);
-        //
-        //    MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
-        //
-        //    if (messageType == MESSAGE_TYPE.STRING)
-        //    {
-        //        SaveSentMessage(messageType, data, latency * latencyMultiplier);
-        //    }
-        //
-        //    SendData(data);
-        //}
-
         protected override void SendResendDataMessage(int messageType, IPEndPoint ip)
         {
             base.SendResendDataMessage(messageType, ip);
@@ -279,12 +263,13 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region AUX
-        [SyncMethod]
-        private void SendData2(object data)
-        {
-            SendData(data as byte[]);
-        }
+        //[SyncMethod]
+        //private void SendData2(object data)
+        //{
+        //    SendData(data as byte[]);
+        //}
 
+        [SyncMethod]
         public override void SendData(byte[] data)
         {
             if (IsTcpConnection)
