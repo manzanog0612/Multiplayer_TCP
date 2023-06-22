@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace MultiplayerLibrary.Reflection
@@ -310,7 +309,7 @@ namespace MultiplayerLibrary.Reflection
             }
             else if (obj is Transform)
             {
-                value = ((Transform)obj).Deserialize(name, data, ref offset, out success);
+                ((Transform)obj).Deserialize(name, data, ref offset, out success);
             }
             else if (obj is byte[])
             {

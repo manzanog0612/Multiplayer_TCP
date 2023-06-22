@@ -140,20 +140,26 @@ namespace MultiplayerLibrary.Reflection
 
         public static List<byte> Serialize(this Transform transformValue, string fieldName)
         {
-            //Debug.Log(transformValue);
-            //
-            //transformValue.
-            //
+            Debug.Log(transformValue);
+            
             List<byte> bytes = SerializeMessageName(fieldName);
-            //bytes.AddRange(BitConverter.GetBytes(transformValue.r).ToList());
-            //bytes.AddRange(BitConverter.GetBytes(transformValue.g).ToList());
-            //bytes.AddRange(BitConverter.GetBytes(transformValue.b).ToList());
-            //bytes.AddRange(BitConverter.GetBytes(transformValue.a).ToList());
-            //
-            //int operation = (int)(transformValue.r * 100) + (int)(transformValue.g * 100) + (int)(transformValue.b * 100) + (int)(transformValue.a * 100);
-            //
-            //bytes.AddRange(SerializeMessageTail(bytes.ToArray(), operation));
-            //
+            bytes.AddRange(BitConverter.GetBytes(transformValue.position.x).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.position.y).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.position.z).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.rotation.x).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.rotation.y).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.rotation.z).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.rotation.w).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.localScale.x).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.localScale.y).ToList());
+            bytes.AddRange(BitConverter.GetBytes(transformValue.localScale.z).ToList());
+
+            int operation = (int)(transformValue.position.x * 100) + (int)(transformValue.position.y * 100) + (int)(transformValue.position.z * 100) + 
+                            (int)(transformValue.rotation.x * 100) + (int)(transformValue.rotation.y * 100) + (int)(transformValue.rotation.z * 100) + (int)(transformValue.rotation.w * 100) +
+                            (int)(transformValue.localScale.x * 100) + (int)(transformValue.localScale.y * 100) + (int)(transformValue.localScale.z * 100);
+            
+            bytes.AddRange(SerializeMessageTail(bytes.ToArray(), operation));
+            
             return bytes;
         }
 

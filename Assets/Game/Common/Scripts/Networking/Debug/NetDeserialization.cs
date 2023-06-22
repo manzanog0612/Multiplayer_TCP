@@ -156,23 +156,33 @@ namespace MultiplayerLibrary.Reflection
             return result;
         }
 
-        public static Transform Deserialize(this Transform transformValue, string name, byte[] data, ref int offset, out bool success)
+        public static void Deserialize(this Transform transformValue, string name, byte[] data, ref int offset, out bool success)
         {
             Debug.Log(transformValue);
 
-            Transform result = null;
-            //result.r = BitConverter.ToSingle(data, offset);
-            //result.g = BitConverter.ToSingle(data, offset + sizeof(float));
-            //result.b = BitConverter.ToSingle(data, offset + sizeof(float) * 2);
-            //result.a = BitConverter.ToSingle(data, offset + sizeof(float) * 3);
-            //
-            //offset += sizeof(float) * 4;
-            //
-            //int operation = (int)(result.r * 100) + (int)(result.g * 100) + (int)(result.b * 100) + (int)(result.a * 100);
+            Vector3 position = new Vector3(BitConverter.ToSingle(data, offset), 
+                                           BitConverter.ToSingle(data, offset + sizeof(float)), 
+                                           BitConverter.ToSingle(data, offset + sizeof(float) * 2));
+            Quaternion rotation = new Quaternion(BitConverter.ToSingle(data, offset + sizeof(float) * 3), 
+                                                 BitConverter.ToSingle(data, offset + sizeof(float) * 4), 
+                                                 BitConverter.ToSingle(data, offset + sizeof(float) * 5), 
+                                                 BitConverter.ToSingle(data, offset + sizeof(float) * 6));
+            Vector3 localScale = new Vector3(BitConverter.ToSingle(data, offset + sizeof(float) * 7),
+                                             BitConverter.ToSingle(data, offset + sizeof(float) * 8),
+                                             BitConverter.ToSingle(data, offset + sizeof(float) * 9));
+
+            transformValue.position = position;
+            transformValue.rotation = rotation;
+            transformValue.localScale = localScale;
+
+            int operation = (int)(transformValue.position.x * 100) + (int)(transformValue.position.y * 100) + (int)(transformValue.position.z * 100) +
+                             (int)(transformValue.rotation.x * 100) + (int)(transformValue.rotation.y * 100) + (int)(transformValue.rotation.z * 100) + (int)(transformValue.rotation.w * 100) +
+                             (int)(transformValue.localScale.x * 100) + (int)(transformValue.localScale.y * 100) + (int)(transformValue.localScale.z * 100);
+
+            //vector3 - quaternion - vector3
+            offset += sizeof(float) * 3 + sizeof(float) * 4 + sizeof(float) * 3;
 
             success = MessageIsSane(name, data, 0, ref offset, 0);
-
-            return result;
         }
 
         public static byte[] Deserialize(this byte[] byteArrayValue, string name, byte[] data, ref int offset, out bool success)
