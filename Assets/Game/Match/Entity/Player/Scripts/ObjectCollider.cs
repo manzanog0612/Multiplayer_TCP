@@ -7,6 +7,8 @@ namespace Game.Match.Entity.Player
     {
         #region ACTIONS
         private Action<Collider2D> onColliderEnter = null;
+        private Action<Collider2D> onColliderStay = null;
+        private Action<Collider2D> onColliderExit = null;
         #endregion
 
         #region UNITY_CALLS
@@ -14,17 +16,24 @@ namespace Game.Match.Entity.Player
         {
             onColliderEnter.Invoke(collision);
         }
+
+        private void OnTriggerStay2D(Collider2D collision)
+        {
+            onColliderStay.Invoke(collision);
+        }
+
+        private void OnTriggerExit2D(Collider2D collision)
+        {
+            onColliderExit.Invoke(collision);
+        }
         #endregion
 
         #region PUBLIC_METHODS
-        public void Init(Action<Collider2D> onColliderEnter)
+        public void Init(Action<Collider2D> onColliderEnter = null, Action<Collider2D> onColliderStay = null, Action<Collider2D> onColliderExit = null)
         {
             this.onColliderEnter = onColliderEnter;
-        }
-
-        public void ToggleView(bool status)
-        {
-            gameObject.SetActive(status);
+            this.onColliderStay = onColliderStay;
+            this.onColliderExit = onColliderExit;
         }
         #endregion
     }

@@ -67,7 +67,7 @@ namespace Game.Match.Entity.Player
             {
                 onSendMessage.Invoke(GAME_MESSAGE_TYPE.PLAYER_HIT);
                 characterController.HitAction.doAction = false;
-                StartCoroutine(DoAction(characterController.Hit));
+                StartCoroutine(DoAction(action: () => characterController.Hit(true)));
             }
         }
 

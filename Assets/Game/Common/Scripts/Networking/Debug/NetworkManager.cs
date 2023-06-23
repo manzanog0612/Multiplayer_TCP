@@ -187,7 +187,7 @@ namespace MultiplayerLibrary.Entity
                 lastSemiTcpMessages.Add((int)messageType, (data, saveTimeFinal));
             }
 
-            Debug.Log("Saved message " + (int)messageType + " for " + saveTimeFinal + " seconds");
+            //Debug.Log("Saved message " + (int)messageType + " for " + saveTimeFinal + " seconds");
         }
 
         protected virtual void SendResendDataMessage(int messageType, IPEndPoint ip)
@@ -300,14 +300,14 @@ namespace MultiplayerLibrary.Entity
 
         protected virtual void ProcessNoticeMessage(IPEndPoint ip, byte[] data)
         {
-            NoticeMessage roomDatasRequest = new NoticeMessage(NoticeMessage.Deserialize(data));
-            HandleMessageError(data, (int)MESSAGE_TYPE.NOTICE, roomDatasRequest, NoticeMessage.GetMessageSize(), NoticeMessage.GetHeaderSize());
+            NoticeMessage noticeMessage = new NoticeMessage(NoticeMessage.Deserialize(data));
+            HandleMessageError(data, (int)MESSAGE_TYPE.NOTICE, noticeMessage, NoticeMessage.GetMessageSize(), NoticeMessage.GetHeaderSize());
         }
 
         protected virtual void ProcessGameMessage(IPEndPoint ip, byte[] data)
         {
-            GameMessage roomDatasRequest = new GameMessage(GameMessage.Deserialize(data));
-            HandleMessageError(data, (int)MESSAGE_TYPE.GAME_MESSAGE, roomDatasRequest, GameMessage.GetMessageSize(), GameMessage.GetHeaderSize());
+            GameMessage gameMessage = new GameMessage(GameMessage.Deserialize(data));
+            HandleMessageError(data, (int)MESSAGE_TYPE.GAME_MESSAGE, gameMessage, GameMessage.GetMessageSize(), GameMessage.GetHeaderSize());
         }
 
         protected virtual void ProcessChatMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)

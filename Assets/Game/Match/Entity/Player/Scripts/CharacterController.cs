@@ -27,6 +27,9 @@ namespace Game.Match.Entity.Player
         [SyncField] private CharacterData characterData = new CharacterData();
         private CharacterAction hitAction = new CharacterAction();
         private bool useDeserializedData = false;
+
+        private bool touchingPlayer = false;
+        private Collider2D playerTouched = null;
         #endregion
 
         #region PROPERTIES
@@ -82,7 +85,7 @@ namespace Game.Match.Entity.Player
             this.useDeserializedData = useDeserializedData;
             this.onHitEffective = onHitEffective;
 
-            objectCollider.Init(OnColliderEnter);
+            objectCollider.Init(OnCollision, OnCollision, OnColliderExit);
 
             characterData.SetLife(MatchConstants.initialLife);
         }
@@ -94,7 +97,6 @@ namespace Game.Match.Entity.Player
                 if (hitAction.canDoAction)
                 {
                     hitAction.SetAction(actionCooldown);
-                    objectCollider.ToggleView(true);
 
                     if (goBackToIdle)
                     {
@@ -108,11 +110,15 @@ namespace Game.Match.Entity.Player
             }
         }
 
-        public void Hit()
+        public void Hit(bool doDamage)
         {
             animationController.PlayHitAnim();
-
             hitAction.updateCooldown = true;
+
+            if (touchingPlayer && doDamage)
+            {
+                onHitEffective.Invoke(playerTouched);
+            }            
         }
 
         public void Move(Vector2 movement)
@@ -124,7 +130,7 @@ namespace Game.Match.Entity.Player
         {
             characterData.LoseLife(MatchConstants.hitDamage);
             liveMeterView.SetLive((float)characterData.Life / MatchConstants.initialLife);
-            Debug.Log("HIT TAKEN, IFE IS " + characterData.Life);
+            Debug.Log("HIT TAKEN, LIFE IS " + characterData.Life + " " + gameObject.name);
         }
         #endregion
 
@@ -132,21 +138,23 @@ namespace Game.Match.Entity.Player
         private void OnFinishHit()
         {
             animationController.PlayIdle();
-            objectCollider.ToggleView(false);
         }
 
-        private void OnColliderEnter(Collider2D collision)
+        private void OnCollision(Collider2D collision)
         {
-            if (((1 << collision.gameObject.layer) & playerLayerMask) != 0)
-            {
-                onHitEffective.Invoke(collision);
-                Debug.Log("HIT DONE");
-            }
+            touchingPlayer = ((1 << collision.gameObject.layer) & playerLayerMask) != 0;
+            playerTouched = collision;
+        }
+
+        private void OnColliderExit(Collider2D collision)
+        {
+            touchingPlayer = false;
+            playerTouched = null;
         }
 
         private IEnumerator UpdateAutomatic()
         {
-            Hit();
+            Hit(false);
 
             while (hitAction.actionCooldownTimer > 0)
             {
