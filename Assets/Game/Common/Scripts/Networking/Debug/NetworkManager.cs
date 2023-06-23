@@ -360,13 +360,30 @@ namespace MultiplayerLibrary.Entity
             }
         }
 
-        //private void ProcessMessage<T>(byte[] data, IMessage<T> message, )
-        //{
-        //    IMessage<T> clientsListMessage = new ClientsListMessage(new ClientsListMessage().Deserialize(data));
-        //
-        //    wasLastMessageSane = CheckMessageSanity(data, clientsListMessage.GetHeaderSize(), clientsListMessage.GetMessageSize(), clientsListMessage, clientsListMessage.GetMessageTail().messageOperationResult);
-        //    ThrowInsaneMessageLogIfInsane((int)MESSAGE_TYPE.CLIENTS_LIST);
-        //}
+        private void CheckIfMessageIdIsCorrect((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
+        {
+            int clientId = ipToId[clientConnectionData];
+
+            int messageId = MessageFormater.GetMessageId(data);
+            Dictionary<MESSAGE_TYPE, int> lastMessagesIds = clients[clientId].lastMessagesIds;
+
+            if (lastMessagesIds.ContainsKey(messageType))
+            {
+                if (lastMessagesIds[messageType] <= messageId)
+                {
+                    lastMessagesIds[messageType] = messageId;
+                }
+                else
+                {
+                    Debug.Log("Received old message, was erased");
+                    wasLastMessageSane = false;
+                }
+            }
+            else
+            {
+                lastMessagesIds.Add(messageType, messageId);
+            }
+        }
         #endregion
 
         #region AUX
@@ -393,31 +410,5 @@ namespace MultiplayerLibrary.Entity
             onReceiveEvent?.Invoke(data, clientConnectionData.ip, id, messageType);
         }
         #endregion
-        //private void CheckIfMessageIdIsCorrect((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
-        //{
-        //    int clientId = ipToId[clientConnectionData];
-        //
-        //    int messageId = MessageFormater.GetMessageId(data);
-        //    Dictionary<MESSAGE_TYPE, int> lastMessagesIds = clients[clientId].lastMessagesIds;
-        //
-        //    if (lastMessagesIds.ContainsKey(messageType))
-        //    {
-        //        if (lastMessagesIds[messageType] <= messageId)
-        //        {
-        //            lastMessagesIds[messageType] = messageId;
-        //            OnReceiveGameEvent(clientConnectionData, data, messageType);
-        //        }
-        //        else
-        //        {
-        //            Debug.Log("Received old message, was erased");
-        //            wasLastMessageSane = false;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        lastMessagesIds.Add(messageType, messageId);
-        //        OnReceiveGameEvent(clientConnectionData, data, messageType);
-        //    }
-        //}
     }
 }

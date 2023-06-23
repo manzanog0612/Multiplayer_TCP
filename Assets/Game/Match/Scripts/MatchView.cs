@@ -11,28 +11,8 @@ namespace Game.Match
         [SerializeField] private TextMeshProUGUI txtTimer = null;
         #endregion
 
-        #region PRIVATE_FIELDS
-        private float time = 0;
-        #endregion
-
-        #region UNITY_CALLS
-        private void Update()
-        {
-            time -= Time.deltaTime;
-            UpdateTimer();
-        }
-        #endregion
-
-        #region PUBLIC_METHODS
-        public void Init(int matchTime)
-        {
-            time = matchTime;
-            UpdateTimer();
-        }
-        #endregion
-
         #region PRIVATE_METHODS
-        private void UpdateTimer()
+        public void UpdateTimer(float time)
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds(time);
             txtTimer.text = string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);

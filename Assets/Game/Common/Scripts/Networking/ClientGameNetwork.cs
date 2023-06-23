@@ -9,20 +9,26 @@ using MultiplayerLibrary.Network.Message.Constants;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using UnityEditor;
 
 namespace Game.Common.Networking
 {
     public class ClientGameNetwork : ClientNetworkManager
     {
+        #region PRIVATE_FIELDS
+        Dictionary<MESSAGE_TYPE, int> lastServerMessagesIds = new Dictionary<MESSAGE_TYPE, int>();
+        #endregion
+
         #region ACTIONS
         private Action<RoomData> onGetRoomData = null;
         private Action<RoomData[]> onReceiveRoomDatas = null;
         private Action onFullRoom = null;
         private Action<int> onPlayersAmountChange = null;
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
+        private Action<float> onTimerUpdate = null;
         #endregion
 
-        #region ACTIONS
+        #region PROPERTIES
         public Dictionary<int, Client> Clients { get => clients; }
         #endregion
 
@@ -39,10 +45,13 @@ namespace Game.Common.Networking
             }
             else
             {
-                GAME_REQUEST_TYPE messageType = GameMessageFormater.GetMessageType(data);
+                MESSAGE_TYPE messageType = MessageFormater.GetMessageType(data);
 
                 switch (messageType)
                 {
+                    case MESSAGE_TYPE.TIMER:
+                        ProcessTimer(data);
+                        break;
                     default:
                         break;
                 }
@@ -51,16 +60,31 @@ namespace Game.Common.Networking
         #endregion
 
         #region PUBLIC_METHODS
-        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage)
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate)
         {
             this.onGetRoomData = onGetRoomData;
             this.onFullRoom = onFullRoom;
             this.onPlayersAmountChange = onPlayersAmountChange;
             this.onReceiveGameMessage = onReceiveGameMessage;
+            this.onTimerUpdate = onTimerUpdate;
         }
         #endregion
 
         #region DATA_RECEIVE_PROCESS
+        private void ProcessTimer(byte[] data)
+        {
+            CheckIfMessageIdIsCorrect(data, MESSAGE_TYPE.TIMER);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            float time = TimerMessage.Deserialize(data);
+
+            onTimerUpdate.Invoke(time);
+        }
+
         protected override void ProcessConnectRequest(IPEndPoint ip, byte[] data)
         {
             base.ProcessConnectRequest(ip, data);
@@ -165,7 +189,7 @@ namespace Game.Common.Networking
                 return;
             }
 
-            onReceiveGameMessage?.Invoke(clientId, (GAME_MESSAGE_TYPE)message);
+            onReceiveGameMessage.Invoke(clientId, (GAME_MESSAGE_TYPE)message);
         }
         #endregion
 
@@ -186,6 +210,29 @@ namespace Game.Common.Networking
             byte[] data = noticeMessage.Serialize();
 
             OnSendData(MESSAGE_TYPE.NOTICE, data);
+        }
+        #endregion
+
+        #region PRIVATE_METHODS
+        private void CheckIfMessageIdIsCorrect(byte[] data, MESSAGE_TYPE messageType)
+        {
+            int messageId = BitConverter.ToInt32(data, sizeof(int));
+
+            if (lastServerMessagesIds.ContainsKey(messageType))
+            {
+                if (lastServerMessagesIds[messageType] <= messageId)
+                {
+                    lastServerMessagesIds[messageType] = messageId;
+                }
+                else
+                {
+                    wasLastMessageSane = false;
+                }
+            }
+            else
+            {
+                lastServerMessagesIds.Add(messageType, messageId);
+            }
         }
         #endregion
     }

@@ -36,7 +36,7 @@ namespace Game.Match
         {
             base.Init();
 
-            matchView.Init(sessionHandler.RoomData.MatchTime);
+            matchView.UpdateTimer(sessionHandler.RoomData.MatchTime);
 
             controlledPlayer = clientHandler.ClientId;
 
@@ -56,6 +56,7 @@ namespace Game.Match
 
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
             sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
+            sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
         }
 
         public byte[] Serialize()

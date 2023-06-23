@@ -6,6 +6,7 @@ using MultiplayerLibrary.Network.Message.Constants;
 using MultiplayerLibrary.Tcp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using UnityEngine;
 
@@ -23,6 +24,9 @@ namespace MultiplayerLibrary.Entity
         private Dictionary<int, double> clientsLatencies = new Dictionary<int, double>();
 
         private bool debug = false;
+
+        private bool matchStarted = false;
+        private float matchTime = 0;
         #endregion
 
         #region PUBLIC_METHODS
@@ -33,6 +37,7 @@ namespace MultiplayerLibrary.Entity
             NetworkManager.port = port;
 
             roomData = new RoomData(id, 0, playersMax, matchTime);
+            this.matchTime = matchTime;
 
             if (IsTcpConnection)
             {
@@ -51,6 +56,12 @@ namespace MultiplayerLibrary.Entity
             udpConnection?.FlushReceiveData();
             matchMakerConnection?.FlushReceiveData();
             tcpServerConnection?.FlushReceiveData();
+
+            if (matchStarted)
+            {
+                matchTime -= Time.deltaTime;
+                SendTimerUpdateMessage();
+            }
         }
 
         public void ShutDownUdpServer()
@@ -382,6 +393,14 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region SEND_DATA_METHODS
+        private void SendTimerUpdateMessage()
+        {
+            TimerMessage timerMessage = new TimerMessage(matchTime);
+
+            byte[] data = timerMessage.Serialize();
+            SendData(data);
+        }
+
         private void SendHandShakeForClients((long ip, int port, Color color) message, float connectionTime)
         {
             HandShakeMessage handShakeMessageForClients = new HandShakeMessage((message.ip, clientId, message.color));
@@ -530,6 +549,8 @@ namespace MultiplayerLibrary.Entity
 
             SaveSentMessage(MESSAGE_TYPE.NOTICE, data, GetBiggerLatency() * latencyMultiplier);
             SendData(data);
+
+            matchStarted = true;
         }
         #endregion
 

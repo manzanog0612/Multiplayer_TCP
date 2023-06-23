@@ -22,6 +22,7 @@ namespace Game.Common
         private Action onFullRoom = null;
         private Action onPlayersAmountChange = null;
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
+        public Action<float> onTimerUpdate = null;
         #endregion
 
         #region PROPERTIES
@@ -55,6 +56,11 @@ namespace Game.Common
         {
             this.onReceiveGameMessage = onReceiveGameMessage;
         }
+
+        public void SetOnUpdateTimer(Action<float> onTimerUpdate)
+        {
+            this.onTimerUpdate = onTimerUpdate;
+        }
         #endregion
 
         #region PRIVATE_METHODS
@@ -74,6 +80,11 @@ namespace Game.Common
         {
             onReceiveGameMessage.Invoke(clientId, messageType);
         }
+
+        private void OnUpdateTimer(float time)
+        {
+            onTimerUpdate?.Invoke(time);
+        }
         #endregion
 
         #region OVERRIDE_METHODS 
@@ -83,7 +94,7 @@ namespace Game.Common
 
             playerModel = new PlayerModel();
 
-            clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage);
+            clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage, OnUpdateTimer);
         }
         #endregion
     }
