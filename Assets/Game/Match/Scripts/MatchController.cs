@@ -55,6 +55,7 @@ namespace Game.Match
             reflectionHandler.SetEntryPoint(this);
 
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
+            sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
         }
 
         public byte[] Serialize()
@@ -146,6 +147,22 @@ namespace Game.Match
                     break;
                 default:
                     break;
+            }
+        }
+
+        private void OnClientDisconnected()
+        {
+            foreach (KeyValuePair<int, CharacterController> character in characterControllers)
+            {
+                int characterKey = character.Key;
+
+                if (!clientHandler.Clients.ContainsKey(characterKey))
+                {
+                    CharacterController characterController = characterControllers[characterKey];
+                    characterControllers.Remove(characterKey);
+                    Destroy(characterController.gameObject);
+                    break;
+                }
             }
         }
         #endregion
