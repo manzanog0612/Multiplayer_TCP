@@ -2,15 +2,13 @@ using Game.Common;
 using Game.Common.Requests;
 using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
-using MultiplayerLibrary.Entity;
 using MultiplayerLibrary.Reflection;
-using MultiplayerLibrary.Reflection.Attributes;
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 using CharacterController = Game.Match.Entity.Player.CharacterController;
+using Client = MultiplayerLibrary.Entity.Client;
 
 namespace Game.Match
 {
@@ -24,6 +22,8 @@ namespace Game.Match
         [SerializeField] private PlayerController playerController = null;
         [SerializeField] private CameraController cameraController = null;
         [SerializeField] private ReflectionHandler reflectionHandler = null;
+
+        //[SerializeField] private CharacterController characterController = null;
         #endregion
 
         #region PRIVATE_FIELDS
@@ -42,8 +42,15 @@ namespace Game.Match
 
             SpawnPlayers();
 
-            playerController.Init(characterControllers[controlledPlayer], clientHandler.OnGetLatency, clientHandler.SendGameMessage);
+            playerController.Init(characterControllers[controlledPlayer], clientHandler.OnGetLatency,
+                onSendMessage: (messageType) =>
+                {
+                    clientHandler.SendGameMessage(clientHandler.ClientId, messageType);
+                });//null, null);
+
             cameraController.Init(characterControllers[controlledPlayer].transform);
+
+            //characterController.Init(Color.red, spawnPoints[0].position, false);//
 
             reflectionHandler.SetEntryPoint(this);
 
@@ -95,11 +102,35 @@ namespace Game.Match
                 CharacterController characterController = Instantiate(playerPrefab, playersHolder).GetComponent<CharacterController>();
 
                 characterController.gameObject.name = characterController.gameObject.name + client.Key;
-                characterController.Init(client.Value.color, spawnPoints[i].position, clientHandler.ClientId != client.Key);
+                characterController.Init(client.Value.color, spawnPoints[i].position, clientHandler.ClientId != client.Key, OnPlayerHitEffective);
 
                 characterControllers.Add(client.Key, characterController);
 
                 i++;
+            }
+        }
+
+        private void OnPlayerHitEffective(Collider2D collider2D)
+        {
+            CharacterController hitCharacter = collider2D.gameObject.GetComponent<CharacterController>();
+            int id = -1;
+
+            foreach (KeyValuePair<int, CharacterController> character in characterControllers)
+            {
+                if (characterControllers[character.Key] == hitCharacter)
+                {
+                    id = character.Key;
+                    break;
+                }
+            }
+
+            if (id != -1)
+            {
+                clientHandler.SendGameMessage(id, GAME_MESSAGE_TYPE.PLAYER_HIT_EFFECTIVE);
+            }
+            else
+            {
+                Debug.LogError("Player hit not found");
             }
         }
 
@@ -109,6 +140,9 @@ namespace Game.Match
             {
                 case GAME_MESSAGE_TYPE.PLAYER_HIT:
                     characterControllers[clientId].DetectHitAction(true, true);
+                    break;
+                case GAME_MESSAGE_TYPE.PLAYER_HIT_EFFECTIVE:
+                    characterControllers[clientId].TakeHit();
                     break;
                 default:
                     break;

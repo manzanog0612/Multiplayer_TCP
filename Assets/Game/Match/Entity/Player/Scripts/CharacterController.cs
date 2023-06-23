@@ -1,8 +1,10 @@
+using Game.Match.Data;
+using Game.Match.Entity.Player.LiveMeter;
+using MultiplayerLibrary.Reflection.Attributes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Game.Match.Entity.Player
 {
@@ -12,9 +14,17 @@ namespace Game.Match.Entity.Player
         [SerializeField] private CharacterMovement characterMovement = null;
         [SerializeField] private AnimationController animationController = null;
         [SerializeField] private SpriteRenderer bodyRenderer = null;
+
+        [Header("Hit Configuration")]
+        [SerializeField] private ObjectCollider objectCollider = null;
+        [SerializeField] private LayerMask playerLayerMask = 0;
+
+        [Header("Life Configurations")]
+        [SerializeField] private LiveMeterView liveMeterView = null;
         #endregion
 
         #region PRIVATE_FIELDS
+        [SyncField] private CharacterData characterData = new CharacterData();
         private CharacterAction hitAction = new CharacterAction();
         private bool useDeserializedData = false;
         #endregion
@@ -25,6 +35,10 @@ namespace Game.Match.Entity.Player
 
         #region CONSTANTS
         private float actionCooldown = 0.6f;
+        #endregion
+
+        #region ACTIONS
+        private Action<Collider2D> onHitEffective = null;  
         #endregion
 
         #region OVERRIDE_METHODS
@@ -61,11 +75,16 @@ namespace Game.Match.Entity.Player
         #endregion
 
         #region PUBLIC_METHODS
-        public void Init(Color color, Vector2 position, bool useDeserializedData)
+        public void Init(Color color, Vector2 position, bool useDeserializedData, Action<Collider2D> onHitEffective)
         {
             bodyRenderer.color = color;
             characterMovement.SetPosition(position);
             this.useDeserializedData = useDeserializedData;
+            this.onHitEffective = onHitEffective;
+
+            objectCollider.Init(OnColliderEnter);
+
+            characterData.SetLife(MatchConstants.initialLife);
         }
 
         public void DetectHitAction(bool input, bool goBackToIdle = false)
@@ -75,6 +94,7 @@ namespace Game.Match.Entity.Player
                 if (hitAction.canDoAction)
                 {
                     hitAction.SetAction(actionCooldown);
+                    objectCollider.ToggleView(true);
 
                     if (goBackToIdle)
                     {
@@ -84,23 +104,47 @@ namespace Game.Match.Entity.Player
             }
             else
             {
-                hitAction.UpdateCooldown(animationController.PlayIdle);
+                hitAction.UpdateCooldown(OnFinishHit);
             }
         }
 
         public void Hit()
         {
             animationController.PlayHitAnim();
+
+            hitAction.updateCooldown = true;
         }
 
         public void Move(Vector2 movement)
         {
             characterMovement.MoveCharacter(movement);
         }
+
+        public void TakeHit()
+        {
+            characterData.LoseLife(MatchConstants.hitDamage);
+            liveMeterView.SetLive((float)characterData.Life / MatchConstants.initialLife);
+            Debug.Log("HIT TAKEN, IFE IS " + characterData.Life);
+        }
         #endregion
 
         #region PRIVATE_METHODS
-        public IEnumerator UpdateAutomatic()
+        private void OnFinishHit()
+        {
+            animationController.PlayIdle();
+            objectCollider.ToggleView(false);
+        }
+
+        private void OnColliderEnter(Collider2D collision)
+        {
+            if (((1 << collision.gameObject.layer) & playerLayerMask) != 0)
+            {
+                onHitEffective.Invoke(collision);
+                Debug.Log("HIT DONE");
+            }
+        }
+
+        private IEnumerator UpdateAutomatic()
         {
             Hit();
 
@@ -110,7 +154,7 @@ namespace Game.Match.Entity.Player
                 yield return null;
             }
 
-            animationController.PlayIdle();
+            OnFinishHit();
             hitAction.canDoAction = true;
         }
         #endregion

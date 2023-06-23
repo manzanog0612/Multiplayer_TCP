@@ -170,9 +170,9 @@ namespace Game.Common.Networking
         #endregion
 
         #region SEND_DATA_METHODS
-        public void SendGameMessage(GAME_MESSAGE_TYPE messageType)
+        public void SendGameMessage(int clientId, GAME_MESSAGE_TYPE messageType)
         {
-            GameMessage gameMessage = new GameMessage((assignedId, (int)messageType));
+            GameMessage gameMessage = new GameMessage((clientId, (int)messageType));
             byte[] data = gameMessage.Serialize();
 
             OnSendData(MESSAGE_TYPE.GAME_MESSAGE, data);

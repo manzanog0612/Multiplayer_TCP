@@ -74,9 +74,9 @@ namespace Game.Common.Networking
             clientGameNetworkManager.SendRoomDatasRequest(onReceiveRoomDatas);
         }
 
-        public void SendGameMessage(GAME_MESSAGE_TYPE messageType)
+        public void SendGameMessage(int clientId, GAME_MESSAGE_TYPE messageType)
         {
-            clientGameNetworkManager.SendGameMessage(messageType);
+            clientGameNetworkManager.SendGameMessage(clientId, messageType);
         }
 
         public void DisconectClient()

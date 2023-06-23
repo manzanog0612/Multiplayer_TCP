@@ -161,7 +161,7 @@ namespace MultiplayerLibrary.Entity
 
             double latency = (utcNow - messageNow).TotalSeconds;
 
-            Debug.Log("L: " + latency.ToString());
+            //Debug.Log("L: " + latency.ToString());
 
             return latency;
         }

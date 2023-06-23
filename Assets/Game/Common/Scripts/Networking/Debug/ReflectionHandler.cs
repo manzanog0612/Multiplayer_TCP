@@ -85,7 +85,7 @@ namespace MultiplayerLibrary.Reflection
                     offset += sizeof(char);
                 }
 
-                Debug.Log(name);
+                //Debug.Log(name);
 
                 Type type = entryPoint.GetType();
                 OverWrite(data, entryPoint, type, name, ref offset);
@@ -454,7 +454,7 @@ namespace MultiplayerLibrary.Reflection
 
                 if (attribute != null)
                 {
-                    Debug.Log(method.Name);
+                    //Debug.Log(method.Name);
                     method.Invoke(obj, new object[] { dataBytes });
                 }
             }
