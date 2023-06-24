@@ -25,6 +25,7 @@ namespace MultiplayerLibrary.Entity
         private bool debug = false;
 
         private bool matchStarted = false;
+        private bool matchEnded = false;
         private float matchTime = 0;
         #endregion
 
@@ -56,10 +57,16 @@ namespace MultiplayerLibrary.Entity
             matchMakerConnection?.FlushReceiveData();
             tcpServerConnection?.FlushReceiveData();
 
-            if (matchStarted)
+            if (matchStarted && !matchEnded)
             {
                 matchTime -= Time.deltaTime;
                 SendTimerUpdateMessage();
+
+                if (matchTime < 0)
+                {
+                    matchEnded = true;
+                    SendNotice(NOTICE.MATCH_FINISHED);
+                }
             }
         }
 
@@ -362,6 +369,11 @@ namespace MultiplayerLibrary.Entity
             Debug.Log("Server is sending the signal to eliminate client: " + clientId.ToString());
 
             SendDisconnectClient(clientId);
+
+            if (clients.Count == 0 && matchEnded)
+            {
+                Application.Quit();
+            }
         }
 
         protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
@@ -386,7 +398,9 @@ namespace MultiplayerLibrary.Entity
 
             if (clients.Count == roomData.PlayersMax)
             {
-                SendRoomFullNotice();
+                roomData.InMatch = true;
+                SendNotice(NOTICE.FULL_ROOM);
+                matchStarted = true;
             }
         }
         #endregion
@@ -394,7 +408,7 @@ namespace MultiplayerLibrary.Entity
         #region SEND_DATA_METHODS
         private void SendTimerUpdateMessage()
         {
-            TimerMessage timerMessage = new TimerMessage(matchTime);
+            TimerMessage timerMessage = new TimerMessage(matchTime < 0 ? 0 : matchTime);
 
             byte[] data = timerMessage.Serialize();
             SendData(data);
@@ -541,15 +555,13 @@ namespace MultiplayerLibrary.Entity
             SendToSpecificClient(data, ip);
         }
 
-        private void SendRoomFullNotice()
+        private void SendNotice(NOTICE notice)
         {
-            NoticeMessage noticeMessage = new NoticeMessage((int)NOTICE.FULL_ROOM);
+            NoticeMessage noticeMessage = new NoticeMessage((int)notice);
             byte[] data = noticeMessage.Serialize();
 
             SaveSentMessage(MESSAGE_TYPE.NOTICE, data, GetBiggerLatency() * latencyMultiplier);
             SendData(data);
-
-            matchStarted = true;
         }
         #endregion
 

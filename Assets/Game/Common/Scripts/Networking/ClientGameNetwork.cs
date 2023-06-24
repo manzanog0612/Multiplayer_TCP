@@ -9,7 +9,6 @@ using MultiplayerLibrary.Network.Message.Constants;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using UnityEditor;
 
 namespace Game.Common.Networking
 {
@@ -26,6 +25,7 @@ namespace Game.Common.Networking
         private Action<int> onPlayersAmountChange = null;
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         private Action<float> onTimerUpdate = null;
+        private Action onMatchFinished = null;
         #endregion
 
         #region PROPERTIES
@@ -60,13 +60,15 @@ namespace Game.Common.Networking
         #endregion
 
         #region PUBLIC_METHODS
-        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate)
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, 
+            Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished)
         {
             this.onGetRoomData = onGetRoomData;
             this.onFullRoom = onFullRoom;
             this.onPlayersAmountChange = onPlayersAmountChange;
             this.onReceiveGameMessage = onReceiveGameMessage;
             this.onTimerUpdate = onTimerUpdate;
+            this.onMatchFinished = onMatchFinished;
         }
         #endregion
 
@@ -166,6 +168,9 @@ namespace Game.Common.Networking
                     break;
                 case NOTICE.FULL_ROOM:
                     onFullRoom.Invoke();
+                    break;
+                case NOTICE.MATCH_FINISHED:
+                    onMatchFinished.Invoke();
                     break;
                 default:
                     break;

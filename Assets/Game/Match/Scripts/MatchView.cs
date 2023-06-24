@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Game.Match
 {
@@ -9,9 +10,30 @@ namespace Game.Match
     {
         #region EXPOSED_FIELDS
         [SerializeField] private TextMeshProUGUI txtTimer = null;
+        [SerializeField] private GameObject winTxt = null;
+        [SerializeField] private GameObject loseTxt = null;
+        [SerializeField] private Button btnGoBack = null;
         #endregion
 
-        #region PRIVATE_METHODS
+        #region PUBLIC_METHODS
+        public void Init(float time, Action onGoBack)
+        {
+            UpdateTimer(time);
+
+            btnGoBack.onClick.AddListener(() => onGoBack.Invoke());
+
+            winTxt.SetActive(false);
+            loseTxt.SetActive(false);
+            btnGoBack.gameObject.SetActive(false);
+        }
+
+        public void SetResultView(bool result)
+        {
+            winTxt.SetActive(result);
+            loseTxt.SetActive(!result);
+            btnGoBack.gameObject.SetActive(true);
+        }
+
         public void UpdateTimer(float time)
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds(time);

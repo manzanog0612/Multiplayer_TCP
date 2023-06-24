@@ -36,7 +36,7 @@ namespace Game.Match
         {
             base.Init();
 
-            matchView.UpdateTimer(sessionHandler.RoomData.MatchTime);
+            matchView.Init(sessionHandler.RoomData.MatchTime, OnGoBack);
 
             controlledPlayer = clientHandler.ClientId;
 
@@ -57,6 +57,7 @@ namespace Game.Match
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
             sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
+            sessionHandler.onMatchFinished = OnFinishMatch;
         }
 
         public byte[] Serialize()
@@ -151,6 +152,25 @@ namespace Game.Match
             }
         }
 
+        private void OnFinishMatch()
+        {
+            int higherLife = -1;
+            int idHigherLife = 0;
+
+            foreach (KeyValuePair<int, CharacterController> character in characterControllers)
+            {
+                if (character.Value.Life > higherLife)
+                {
+                    higherLife = character.Value.Life;
+                    idHigherLife = character.Key;
+                }
+            }
+
+            playerController.gameObject.SetActive(false);
+
+            matchView.SetResultView(idHigherLife == clientHandler.ClientId);
+        }
+
         private void OnClientDisconnected()
         {
             foreach (KeyValuePair<int, CharacterController> character in characterControllers)
@@ -165,6 +185,13 @@ namespace Game.Match
                     break;
                 }
             }
+        }
+
+        private void OnGoBack()
+        {
+            clientHandler.DisconectClient();
+
+            ChangeScene(SCENES.LOGIN);
         }
         #endregion
     }

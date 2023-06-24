@@ -84,9 +84,10 @@ namespace Game.Common.Networking
             clientGameNetworkManager.DisconectClient();
         }
 
-        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate)
+        public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, 
+            Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished)
         {
-            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage, onTimerUpdate);
+            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage, onTimerUpdate, onMatchFinished);
         }
         #endregion
     }

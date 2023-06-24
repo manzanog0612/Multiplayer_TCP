@@ -34,6 +34,7 @@ namespace Game.Match.Entity.Player
 
         #region PROPERTIES
         public CharacterAction HitAction { get => hitAction; }
+        public int Life { get => characterData.Life; }
         #endregion
 
         #region CONSTANTS

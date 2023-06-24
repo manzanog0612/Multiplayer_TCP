@@ -39,7 +39,6 @@ namespace MultiplayerLibrary.Entity
         {
             Debug.Log("This player is going to be eliminated");
             SendDisconnectClient(assignedId);
-            Application.Quit();
         }
 
         #region UDP
@@ -154,7 +153,6 @@ namespace MultiplayerLibrary.Entity
             if (clientId == assignedId)
             {
                 udpConnection.Close();
-                Application.Quit();
             }
             else
             {
