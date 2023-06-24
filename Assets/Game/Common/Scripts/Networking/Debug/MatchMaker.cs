@@ -124,6 +124,11 @@ namespace MultiplayerLibrary
 
             if (rooms.ContainsKey(roomData.Id))
             {
+                if (roomData.RoomFull || rooms[roomData.Id].InMatch)
+                {
+                    roomData.InMatch = true;
+                }
+
                 rooms[roomData.Id] = roomData;
 
                 Debug.Log("Received data update from server " + roomData.Id + "- CLIENTS: " + roomData.PlayersIn);

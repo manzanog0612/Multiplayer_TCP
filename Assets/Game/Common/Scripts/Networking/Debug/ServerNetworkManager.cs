@@ -6,7 +6,6 @@ using MultiplayerLibrary.Network.Message.Constants;
 using MultiplayerLibrary.Tcp;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using UnityEngine;
 
