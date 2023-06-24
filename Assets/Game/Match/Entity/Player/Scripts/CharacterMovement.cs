@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.Match.Entity.Player
@@ -22,22 +20,12 @@ namespace Game.Match.Entity.Player
         {
             body.velocity = direction.normalized * movementSpeed;
 
-            Rotateplayer(direction);
-        }
-
-        public void ModifyMovementSpeed(float movementSpeed)
-        {
-            this.movementSpeed = movementSpeed;
-        }
-
-        public void ModifyTurnSpeed(float turnSpeed)
-        {
-            this.turnSpeed = turnSpeed;
+            RotateCharacter(direction);
         }
         #endregion
 
         #region PRIVATE_METHODS
-        private void Rotateplayer(Vector2 direction)
+        private void RotateCharacter(Vector2 direction)
         {
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle - 90, Vector3.forward);

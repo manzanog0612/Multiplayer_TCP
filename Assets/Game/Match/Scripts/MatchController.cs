@@ -1,5 +1,6 @@
 using Game.Common;
 using Game.Common.Requests;
+using Game.Match.Controllers;
 using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
 using MultiplayerLibrary.Reflection;
@@ -23,6 +24,9 @@ namespace Game.Match
         [SerializeField] private CameraController cameraController = null;
         [SerializeField] private ReflectionHandler reflectionHandler = null;
 
+        [Header("Controllers")]
+        [SerializeField] private TurretsController turretsController = null;
+
         //[SerializeField] private CharacterController characterController = null;
         #endregion
 
@@ -41,6 +45,7 @@ namespace Game.Match
             controlledPlayer = clientHandler.ClientId;
 
             SpawnPlayers();
+            turretsController.Init();
 
             playerController.Init(characterControllers[controlledPlayer], clientHandler.OnGetLatency,
                 onSendMessage: (messageType) =>

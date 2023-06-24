@@ -130,6 +130,7 @@ namespace Game.Match.Entity.Player
         public void TakeHit()
         {
             characterData.LoseLife(MatchConstants.hitDamage);
+            animationController.PlayHurtAnimation();
             liveMeterView.SetLive((float)characterData.Life / MatchConstants.initialLife);
             Debug.Log("HIT TAKEN, LIFE IS " + characterData.Life + " " + gameObject.name);
         }
