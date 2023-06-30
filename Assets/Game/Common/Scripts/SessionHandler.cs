@@ -24,6 +24,7 @@ namespace Game.Common
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         public Action<float> onTimerUpdate = null;
         public Action onMatchFinished = null;
+        public Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage = null;
         #endregion
 
         #region PROPERTIES
@@ -91,6 +92,11 @@ namespace Game.Common
         {
             onMatchFinished.Invoke();
         }
+
+        private void OnReceiveServerGameMessage(GAME_MESSAGE_TYPE messageType, object data)
+        {
+            onReceiveServerGameMessage.Invoke(messageType, data);
+        }
         #endregion
 
         #region OVERRIDE_METHODS 
@@ -100,7 +106,8 @@ namespace Game.Common
 
             playerModel = new PlayerModel();
 
-            clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage, OnUpdateTimer, OnMatchFinished);
+            clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage, 
+                                    OnUpdateTimer, OnMatchFinished, OnReceiveServerGameMessage);
         }
         #endregion
     }

@@ -18,26 +18,21 @@ namespace MultiplayerLibrary.Entity
         private UdpConnection udpConnection;
         private TcpServerConnection tcpServerConnection;
 
-        private RoomData roomData;
+        protected RoomData roomData;
 
         private Dictionary<int, double> clientsLatencies = new Dictionary<int, double>();
 
         private bool debug = false;
-
-        private bool matchStarted = false;
-        private bool matchEnded = false;
-        private float matchTime = 0;
         #endregion
 
         #region PUBLIC_METHODS
-        public void Start(int port, int id, int playersMax, int matchTime)
+        public virtual void Start(int port, int id, int playersMax, int matchTime)
         {
             ipAddress = IPAddress.Parse(MatchMaker.ip);
 
             NetworkManager.port = port;
 
             roomData = new RoomData(id, 0, playersMax, matchTime);
-            this.matchTime = matchTime;
 
             if (IsTcpConnection)
             {
@@ -56,18 +51,6 @@ namespace MultiplayerLibrary.Entity
             udpConnection?.FlushReceiveData();
             matchMakerConnection?.FlushReceiveData();
             tcpServerConnection?.FlushReceiveData();
-
-            if (matchStarted && !matchEnded)
-            {
-                matchTime -= Time.deltaTime;
-                SendTimerUpdateMessage();
-
-                if (matchTime < 0)
-                {
-                    matchEnded = true;
-                    SendNotice(NOTICE.MATCH_FINISHED);
-                }
-            }
         }
 
         public void ShutDownUdpServer()
@@ -232,7 +215,7 @@ namespace MultiplayerLibrary.Entity
 
             if (messageType == MESSAGE_TYPE.STRING)
             {
-                SaveSentMessage(MESSAGE_TYPE.STRING, data, GetBiggerLatency() * latencyMultiplier);
+                SaveSentMessage((int)MESSAGE_TYPE.STRING, data, GetBiggerLatency() * latencyMultiplier);
             }
         }
         #endregion
@@ -270,7 +253,7 @@ namespace MultiplayerLibrary.Entity
             RoomsDataMessage roomsDataMessage = new RoomsDataMessage(romDatas.ToArray());
             byte[] data = roomsDataMessage.Serialize();
 
-            SaveSentMessage(MESSAGE_TYPE.NOTICE, data, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage((int)MESSAGE_TYPE.NOTICE, data, GetBiggerLatency() * latencyMultiplier);
 
             SendToSpecificClient(data, ip);
         }
@@ -288,7 +271,7 @@ namespace MultiplayerLibrary.Entity
 
             SendData(data);
 
-            SaveSentMessage(MESSAGE_TYPE.GAME_MESSAGE, data, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage((int)MESSAGE_TYPE.GAME_MESSAGE, data, GetBiggerLatency() * latencyMultiplier);
         }
 
         protected override void ProcessReflectionMessage(IPEndPoint ip, byte[] data)
@@ -369,11 +352,6 @@ namespace MultiplayerLibrary.Entity
             Debug.Log("Server is sending the signal to eliminate client: " + clientId.ToString());
 
             SendDisconnectClient(clientId);
-
-            if (clients.Count == 0 && matchEnded)
-            {
-                Application.Quit();
-            }
         }
 
         protected override void ProcessHandShake((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
@@ -395,25 +373,10 @@ namespace MultiplayerLibrary.Entity
             AddClient(clientConnectionData.ip, clientId, clientConnectionData.timeStamp, Vector3.zero, message.color);
 
             SendClientListMessage(clientConnectionData.ip);
-
-            if (clients.Count == roomData.PlayersMax)
-            {
-                roomData.InMatch = true;
-                SendNotice(NOTICE.FULL_ROOM);
-                matchStarted = true;
-            }
         }
         #endregion
 
         #region SEND_DATA_METHODS
-        private void SendTimerUpdateMessage()
-        {
-            TimerMessage timerMessage = new TimerMessage(matchTime < 0 ? 0 : matchTime);
-
-            byte[] data = timerMessage.Serialize();
-            SendData(data);
-        }
-
         private void SendHandShakeForClients((long ip, int port, Color color) message, float connectionTime)
         {
             HandShakeMessage handShakeMessageForClients = new HandShakeMessage((message.ip, clientId, message.color));
@@ -421,7 +384,7 @@ namespace MultiplayerLibrary.Entity
             byte[] data = handShakeMessageForClients.Serialize(connectionTime);
 
             SendData(data);
-            SaveSentMessage(MESSAGE_TYPE.HAND_SHAKE, data, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage((int)MESSAGE_TYPE.HAND_SHAKE, data, GetBiggerLatency() * latencyMultiplier);
         }
 
         protected override void SendResendDataMessage(int messageType, IPEndPoint ip)
@@ -432,7 +395,7 @@ namespace MultiplayerLibrary.Entity
 
             byte[] data = resendDataMessage.Serialize();
 
-            SaveSentMessage(MESSAGE_TYPE.RESEND_DATA, data, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage((int)MESSAGE_TYPE.RESEND_DATA, data, GetBiggerLatency() * latencyMultiplier);
 
             SendToSpecificClient(data, ip);
         }
@@ -450,7 +413,7 @@ namespace MultiplayerLibrary.Entity
 
             byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
 
-            SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage((int)MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency() * latencyMultiplier);
 
             SendData(data);
 
@@ -476,7 +439,7 @@ namespace MultiplayerLibrary.Entity
             {
                 Debug.Log("Send server update data to match maker");
             
-                SaveSentMessage(MESSAGE_TYPE.SERVER_DATA_UPDATE, data, GetBiggerLatency() * latencyMultiplier);
+                SaveSentMessage((int)MESSAGE_TYPE.SERVER_DATA_UPDATE, data, GetBiggerLatency() * latencyMultiplier);
             
                 matchMakerConnection.Send(data);
             }
@@ -525,7 +488,7 @@ namespace MultiplayerLibrary.Entity
             {
                 Debug.Log("Send server is on message to match maker");
 
-                SaveSentMessage(MESSAGE_TYPE.SERVER_ON, data, GetBiggerLatency() * latencyMultiplier);
+                SaveSentMessage((int)MESSAGE_TYPE.SERVER_ON, data, GetBiggerLatency() * latencyMultiplier);
 
                 matchMakerConnection.Send(data);
             }
@@ -540,7 +503,7 @@ namespace MultiplayerLibrary.Entity
             {
                 Debug.Log("Send server disconnect");
 
-                SaveSentMessage(MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency() * latencyMultiplier);
+                SaveSentMessage((int)MESSAGE_TYPE.ENTITY_DISCONECT, data, GetBiggerLatency() * latencyMultiplier);
 
                 matchMakerConnection.Send(data);
             }
@@ -551,22 +514,13 @@ namespace MultiplayerLibrary.Entity
             ClientsListMessage clientsListMessage = new ClientsListMessage((GetClientsList(), clientId - 1));
             byte[] data = clientsListMessage.Serialize();
 
-            SaveSentMessage(MESSAGE_TYPE.CLIENTS_LIST, data, GetBiggerLatency() * latencyMultiplier);
+            SaveSentMessage((int)MESSAGE_TYPE.CLIENTS_LIST, data, GetBiggerLatency() * latencyMultiplier);
             SendToSpecificClient(data, ip);
-        }
-
-        private void SendNotice(NOTICE notice)
-        {
-            NoticeMessage noticeMessage = new NoticeMessage((int)notice);
-            byte[] data = noticeMessage.Serialize();
-
-            SaveSentMessage(MESSAGE_TYPE.NOTICE, data, GetBiggerLatency() * latencyMultiplier);
-            SendData(data);
         }
         #endregion
 
         #region AUX
-        private double GetBiggerLatency()
+        protected double GetBiggerLatency()
         {
             double latency = 0.01f;
 

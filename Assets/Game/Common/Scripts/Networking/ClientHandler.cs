@@ -1,3 +1,4 @@
+using Game.Common.Networking.Message;
 using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
 using MultiplayerLibrary;
@@ -82,12 +83,24 @@ namespace Game.Common.Networking
         public void DisconectClient()
         {
             clientGameNetworkManager.DisconectClient();
+            clientGameNetworkManager.Clients.Clear();
+        }
+
+        public void SendPlayerPosition(Vector3 position)
+        {
+            clientGameNetworkManager.SendPlayerPosition(position);
+        }
+
+        public void SendBulletBornMessage(int id, Vector2 pos, Vector2 dir)
+        {
+            clientGameNetworkManager.SendBulletBornMessage(id, pos, dir);
         }
 
         public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, 
-            Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished)
+            Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished,
+            Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage)
         {
-            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage, onTimerUpdate, onMatchFinished);
+            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage, onTimerUpdate, onMatchFinished, onReceiveServerGameMessage);
         }
         #endregion
     }

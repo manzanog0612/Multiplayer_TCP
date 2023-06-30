@@ -339,7 +339,7 @@ namespace MultiplayerLibrary
             clientUdpConnection.Send(data, ip);
 
             double latency = CalculateLatency(data);
-            SaveSentMessage(messageType, data, latency < minimunSaveTime ? minimunSaveTime : latency * latencyMultiplier);
+            SaveSentMessage((int)messageType, data, latency < minimunSaveTime ? minimunSaveTime : latency * latencyMultiplier);
         }
         #endregion
     }

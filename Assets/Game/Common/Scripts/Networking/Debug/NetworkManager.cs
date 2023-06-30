@@ -21,6 +21,7 @@ namespace MultiplayerLibrary.Entity
         #region PROTECTED_FIELDS   
         protected int clientId = 0;
 
+        protected Dictionary<int, int> lastMessagesIds = new Dictionary<int, int>();
         protected Dictionary<int, (byte[] data, float time)> lastSemiTcpMessages = new Dictionary<int, (byte[], float)>();
 
         protected bool wasLastMessageSane = true;
@@ -173,21 +174,42 @@ namespace MultiplayerLibrary.Entity
             return op == messageTail.messageOperationResult && data.Length == messageTail.messageSize;
         }
 
-        protected void SaveSentMessage(MESSAGE_TYPE messageType, byte[] data, double saveTime)
+        protected void SaveSentMessage(int messageType, byte[] data, double saveTime)
         {
             float millisecond = (float)saveTime;
             float saveTimeFinal = millisecond < Time.deltaTime * 2 ? Time.deltaTime * 2 : millisecond;
 
-            if (lastSemiTcpMessages.ContainsKey((int)messageType))
+            if (lastSemiTcpMessages.ContainsKey(messageType))
             {
-                lastSemiTcpMessages[(int)messageType] = (data, saveTimeFinal);
+                lastSemiTcpMessages[messageType] = (data, saveTimeFinal);
             }
             else
             {
-                lastSemiTcpMessages.Add((int)messageType, (data, saveTimeFinal));
+                lastSemiTcpMessages.Add(messageType, (data, saveTimeFinal));
             }
 
             //Debug.Log("Saved message " + (int)messageType + " for " + saveTimeFinal + " seconds");
+        }
+
+        protected void CheckIfMessageIdIsCorrect(byte[] data, int messageType)
+        {
+            int messageId = BitConverter.ToInt32(data, sizeof(int));
+
+            if (lastMessagesIds.ContainsKey(messageType))
+            {
+                if (lastMessagesIds[messageType] <= messageId)
+                {
+                    lastMessagesIds[messageType] = messageId;
+                }
+                else
+                {
+                    wasLastMessageSane = false;
+                }
+            }
+            else
+            {
+                lastMessagesIds.Add(messageType, messageId);
+            }
         }
 
         protected virtual void SendResendDataMessage(int messageType, IPEndPoint ip)

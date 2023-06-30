@@ -14,17 +14,17 @@ namespace Game.Match.Entity.Player
         #region UNITY_CALLS
         private void OnTriggerEnter2D(Collider2D collision)
         {
-            onColliderEnter.Invoke(collision);
+            onColliderEnter?.Invoke(collision);
         }
 
         private void OnTriggerStay2D(Collider2D collision)
         {
-            onColliderStay.Invoke(collision);
+            onColliderStay?.Invoke(collision);
         }
 
         private void OnTriggerExit2D(Collider2D collision)
         {
-            onColliderExit.Invoke(collision);
+            onColliderExit?.Invoke(collision);
         }
         #endregion
 

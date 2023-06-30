@@ -4,8 +4,11 @@ using Game.Match.Controllers;
 using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
 using MultiplayerLibrary.Reflection;
+using MultiplayerLibrary.Reflection.Attributes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 using CharacterController = Game.Match.Entity.Player.CharacterController;
@@ -33,6 +36,7 @@ namespace Game.Match
         #region PRIVATE_FIELDS
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
+        //[SyncField]private Dictionary<int, Dictionary<string, float>> dic = new Dictionary<int, Dictionary<string, float>>();
         #endregion
 
         #region OVERRIDE_METHODS
@@ -45,24 +49,50 @@ namespace Game.Match
             controlledPlayer = clientHandler.ClientId;
 
             SpawnPlayers();
-            turretsController.Init();
+            turretsController.Init(clientHandler.SendBulletBornMessage,
+                onSetBulletDeath: (bulletId, collision) =>
+                {
+                    OnPlayerHitEffective(collision);
+                    clientHandler.SendGameMessage(bulletId, GAME_MESSAGE_TYPE.BULLET_DEATH);
+                });
 
             playerController.Init(characterControllers[controlledPlayer], clientHandler.OnGetLatency,
                 onSendMessage: (messageType) =>
                 {
-                    clientHandler.SendGameMessage(clientHandler.ClientId, messageType);
+                    clientHandler.SendGameMessage(controlledPlayer, messageType);
                 });//null, null);
 
             cameraController.Init(characterControllers[controlledPlayer].transform);
 
             //characterController.Init(Color.red, spawnPoints[0].position, false);//
 
+            //dic.Add(1, new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f });
+            //dic.Add(2, new Dictionary<string, float> { ["b"] = 0.2f, ["bb"] = 0.22f });
+
             reflectionHandler.SetEntryPoint(this);
 
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
             sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
+            sessionHandler.onReceiveServerGameMessage = turretsController.OnReceiveTurretData;
             sessionHandler.onMatchFinished = OnFinishMatch;
+        }
+
+        private void Update()
+        {
+            //if (Input.GetKeyDown(KeyCode.Space))
+            //{
+            //    if (dic[1] == new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f })
+            //    {
+            //        dic[1] = new Dictionary<string, float> { ["b"] = 0.2f, ["bb"] = 0.22f };
+            //    }
+            //    else
+            //    {
+            //        dic[1] = new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f };
+            //    }
+            //}
+
+            clientHandler.SendPlayerPosition(characterControllers[controlledPlayer].transform.position);
         }
 
         public byte[] Serialize()
@@ -80,6 +110,11 @@ namespace Game.Match
 
         public void Deserialize(byte[] msg)
         {
+            if (msg.Length == 0)
+            {
+                return;
+            }
+
             int offset = 0;
 
             for (int i = 0; i < characterControllers.Count; i++)
@@ -138,7 +173,7 @@ namespace Game.Match
             }
             else
             {
-                Debug.LogError("Player hit not found");
+                Debug.Log("Player wasn't hit");
             }
         }
 
@@ -197,6 +232,16 @@ namespace Game.Match
             clientHandler.DisconectClient();
 
             ChangeScene(SCENES.LOGIN);
+        }
+
+        private Transform OnGetPlayerTransform(int id)
+        {
+            if (characterControllers.ContainsKey(id))
+            {
+                return characterControllers[id].GetComponent<Transform>();
+            }
+
+            return null;
         }
         #endregion
     }

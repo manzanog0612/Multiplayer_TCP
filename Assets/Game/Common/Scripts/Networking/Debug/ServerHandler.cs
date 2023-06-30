@@ -1,3 +1,4 @@
+using Game.Common.Networking;
 using System;
 using UnityEngine;
 
@@ -5,11 +6,11 @@ namespace MultiplayerLibrary.Entity
 {
     public class ServerHandler : MonoBehaviour
     {
-        private ServerNetworkManager serverNetworkManager = null;
+        private ServerGameNetwork serverNetworkManager = null;
 
         private void Awake()
         {
-            serverNetworkManager = new ServerNetworkManager();
+            serverNetworkManager = new ServerGameNetwork();
 
             NetworkManager.Instance = serverNetworkManager;
         }

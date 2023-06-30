@@ -11,13 +11,10 @@ namespace Game.Match.Entity.Turret
         [SerializeField] private TurretAnimationController animationController = null;
         [SerializeField] private Transform gun = null;
 
-        [SerializeField] private LayerMask playerLayerMask = 0;
-        
         [Header("Hit Configuration")]
         [SerializeField] private GameObject bulletPrefab = null;
 
         [Header("Animation Configuration")]
-        [SerializeField] private float rotationDuration = 0.3f;
         [SerializeField] private float shootAnimDuration = 0.2f;
         #endregion
 
@@ -25,46 +22,37 @@ namespace Game.Match.Entity.Turret
         private Transform bulletsHolder = null;
         #endregion
 
+        #region ACTIONS
+        private Action<int, Vector2, Vector2, GameObject> onSpawnBullet = null;
+        #endregion
+
         #region PUBLIC_METHODS
-        public void Init(Transform bulletsHolder)
+        public void Init(Transform bulletsHolder, Action<int, Vector2, Vector2, GameObject> onSpawnBullet)
         {
+            this.onSpawnBullet = onSpawnBullet;
             this.bulletsHolder = bulletsHolder;
         }
 
-        public void ShootCharacter(Transform character)
+        public void SetRotation(Quaternion rotation)
         {
-            Vector2 direction = (transform.position - character.position).normalized;
+            transform.rotation = rotation;
+        }
 
-            StartCoroutine(Rotate(Quaternion.LookRotation(direction, -Vector3.forward), Shoot));
+        public void Shoot(int bulletId)
+        {
+            animationController.PlayGunShot();
+            StartCoroutine(GoBackToIdleInSeconds(shootAnimDuration));
+
+            Vector2 pos = gun.position;
+            Vector2 dir = gun.up;
+
+            GameObject bullet = Instantiate(bulletPrefab, pos, Quaternion.LookRotation(Vector3.forward, dir), bulletsHolder);
+
+            onSpawnBullet.Invoke(bulletId, pos, dir, bullet);
         }
         #endregion
 
         #region PRIVATE_METHODS
-        private void Shoot()
-        {
-            animationController.PlayGunShot();
-            Debug.Log("SHOOT");
-            StartCoroutine(GoBackToIdleInSeconds(shootAnimDuration));
-        }
-
-        private IEnumerator Rotate(Quaternion toDir, Action callback)
-        {
-            float t = 0;
-
-            Quaternion initialRot = transform.transform.rotation;
-
-            while (t < rotationDuration)
-            {
-                t += Time.deltaTime;
-
-                transform.transform.rotation = Quaternion.Lerp(initialRot, toDir, t);
-
-                yield return null;
-            }
-
-            callback.Invoke();
-        }
-
         private IEnumerator GoBackToIdleInSeconds(float seconds)
         {
             yield return new WaitForSeconds(seconds);

@@ -56,7 +56,7 @@ namespace Game.Match.Entity.Player
 
             while (time < animationDuration)
             {
-                if (time > timeStages[actualStage])
+                if (time > timeStages[actualStage] && actualStage < totalStages - 1)
                 {
                     actualStage++;
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace MultiplayerLibrary.Reflection
 {
@@ -16,6 +17,9 @@ namespace MultiplayerLibrary.Reflection
 
         public object entryPoint = null;
         private ClientNetworkManager clientNetwork;
+        private Dictionary<string, object> savedVars = new Dictionary<string, object>();
+
+        private object dicKey = null;
 
         #region UNITY_CALLS
         public void Start()
@@ -30,7 +34,7 @@ namespace MultiplayerLibrary.Reflection
             if (entryPoint == null)
             {
                 return;
-            } 
+            }
 
             Type type = entryPoint.GetType();
             List<List<byte>> gameManagerAsBytes = Inspect(entryPoint, type);
@@ -85,14 +89,12 @@ namespace MultiplayerLibrary.Reflection
                     offset += sizeof(char);
                 }
 
-                //Debug.Log(name);
-
                 Type type = entryPoint.GetType();
-                OverWrite(data, entryPoint, type, name, ref offset);
+                OverWrite(data, entryPoint, type, name, name, ref offset);
             }
         }
 
-        private void OverWrite(byte[] data, object obj, Type type, string path, ref int offset)
+        private void OverWrite(byte[] data, object obj, Type type, string path, string fullPath, ref int offset)
         {
             string[] pathParts = path.Split("\\");
 
@@ -120,82 +122,91 @@ namespace MultiplayerLibrary.Reflection
                                 modifiedPath += pathParts[i];
                             }
 
-                            OverWrite(data, newObj, type, modifiedPath, ref offset);
+                            OverWrite(data, newObj, type, modifiedPath, fullPath, ref offset);
                         }
                         else
                         {
                             if (typeof(IEnumerable).IsAssignableFrom(newObj.GetType()))
                             {
-                                int offsetAux = offset;
+                                bool isDicKey = pathParts[0].Contains(field.Name + "Key[");
+                                bool isDicValue = pathParts[0].Contains(field.Name + "Value[");
+                                int i = 0;
 
-                                if (typeof(IDictionary).IsAssignableFrom(newObj.GetType()) && pathParts[0].Contains(field.Name + "Key["))
+                                if (typeof(IDictionary).IsAssignableFrom(newObj.GetType()) && (isDicKey || isDicValue))
                                 {
-                                    object dicKey = null;
+                                    int index = int.Parse(pathParts[0].Split('[')[1][0].ToString());
                                     object dicValue = null;
-
+                                    object dicKey = null;
                                     bool found = false;
 
                                     foreach (DictionaryEntry entry in newObj as IDictionary)
                                     {
-                                        dicKey = GetVarData(data, pathParts[0], entry.Key, ref offsetAux);
-
-                                        if (Equals(dicKey, entry.Key))
+                                        if (i == index)
                                         {
-                                            offset = offsetAux;
-
-                                            string dicValueFieldName = string.Empty.Deserialize(string.Empty, data, ref offsetAux, out bool success);
-                                            offset += dicValueFieldName.Length * sizeof(char) + sizeof(int);
-
-                                            dicValue = GetVarData(data, dicValueFieldName, entry.Value, ref offset);
+                                            dicValue = (newObj as IDictionary)[entry.Key];
+                                            dicKey = entry.Key;
                                             found = true;
-
                                             break;
                                         }
                                         else
                                         {
-                                            offsetAux = offset;
+                                            i++;
                                         }
                                     }
 
-                                    if (found)
+                                    if (isDicValue)
                                     {
-                                        (newObj as IDictionary)[dicKey] = dicValue;
+                                        if (found)
+                                        {
+                                            OverWriteVar(data, pathParts[0], ref dicValue, ref offset, fullPath, out bool success);
+
+                                            if (success)
+                                            {
+                                                (newObj as IDictionary)[this.dicKey] = dicValue;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            (newObj as IDictionary).Add(this.dicKey, dicValue);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        this.dicKey = dicKey;//esto esta mal, hay que deserializar la key y despues guardarla y buscar el value
                                     }
 
                                     return;
                                 }
                                 else if (typeof(ICollection).IsAssignableFrom(newObj.GetType()) && pathParts[0].Contains(field.Name + "["))
                                 {
-                                    int i = 0;
+                                    object collectionObj = null;
+
                                     foreach (object element in newObj as ICollection)
                                     {
                                         string fielName = field.Name + "[" + i.ToString() + "]";
 
                                         if (Equals(fielName, pathParts[0]))
                                         {
-                                            offset = offsetAux;
-
-                                            object collectionValue = GetVarData(data, pathParts[0], element, ref offset);
-
-                                            OverrideCollectionValue(ref newObj, i, collectionValue);
-
+                                            collectionObj = element;
                                             break;
                                         }
                                         else
                                         {
-                                            offsetAux = offset;
+                                            i++;
                                         }
-
-                                        i++;
                                     }
+
+                                    OverWriteVar(data, pathParts[0], ref collectionObj, ref offset, fullPath, out bool success);
                                 }
                             }
                             else
                             {
                                 if (field.Name == pathParts[0])
                                 {
-                                    object value = GetVarData(data, pathParts[0], newObj, ref offset);
-                                    field.SetValue(obj, value);
+                                    OverWriteVar(data, pathParts[0], ref newObj, ref offset, fullPath, out bool success);
+
+                                    //object value = GetVarData(data, pathParts[0], newObj, ref offset);
+                                    //field.SetValue(obj, value);
                                 }
                             }
                         }
@@ -211,252 +222,9 @@ namespace MultiplayerLibrary.Reflection
             if (typeof(ISync).IsAssignableFrom(type))
             {
                 byte[] value = new byte[0].Deserialize(path, data, ref offset, out bool success);
+
                 (obj as ISync).Deserialize(value);
                 return;
-            }
-        }
-
-        private void OverrideCollectionValue(ref object newObj, int i, object collectionValue)
-        {
-            ICollection collection = newObj as ICollection;
-
-            Type type = collectionValue.GetType().GetGenericTypeDefinition();
-
-            if (type == typeof(IList))
-            {
-                (collection as IList)[i] = collectionValue;
-            }
-            else if (type == typeof(Queue<>))
-            {
-                Queue originalQueue = collection as Queue;
-                Queue tempQueue = new Queue();
-            
-                for (int j = 0; j < originalQueue.Count; j++)
-                {
-                    if (j == i)
-                    {
-                        tempQueue.Enqueue(collectionValue);
-                    }
-                    else
-                    {
-                        tempQueue.Enqueue(originalQueue.Dequeue());
-                    }
-                }
-            
-                originalQueue = new Queue(tempQueue);
-            }
-            else if (type == typeof(Stack<>))
-            {
-                Stack originalStack = collection as Stack;
-                Stack tempStack = new Stack();
-            
-                for (int j = 0; j < originalStack.Count; j++)
-                {
-                    if (j == i)
-                    {
-                        tempStack.Push(collectionValue);
-                    }
-                    else
-                    {
-                        tempStack.Push(originalStack.Pop());
-                    }
-                }
-            
-                originalStack = new Stack(tempStack);
-            }
-        }
-
-        private object GetVarData(byte[] data, string name, object obj, ref int offset)
-        {
-            bool success = false;
-            object value = null;
-
-            if (obj is int)
-            {
-                value = ((int)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is float)
-            {
-                value = ((float)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is bool)
-            {
-                value = ((bool)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is char)
-            {
-                value = ((char)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is string)
-            {
-                value = ((string)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is Vector2)
-            {
-                value = ((Vector2)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is Vector3)
-            {
-                value = ((Vector3)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is Quaternion)
-            {
-                value = ((Quaternion)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is Color)
-            {
-                value = ((Color)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is Transform)
-            {
-                ((Transform)obj).Deserialize(name, data, ref offset, out success);
-            }
-            else if (obj is byte[])
-            {
-                value = ((byte[])obj).Deserialize(name, data, ref offset, out success);
-            }
-            else
-            {
-                OverWrite(data, obj, obj.GetType(), name, ref offset);
-            }
-
-            return success ? value : null;
-        }
-        #endregion
-
-        #region READ_METHODS
-        private List<List<byte>> Inspect(object obj, Type type, string fieldName = "")
-        {
-            List<List<byte>> output = new List<List<byte>>();
-
-            foreach (FieldInfo field in type.GetFields(InstanceDeclaredOnlyFilter))
-            {
-                IEnumerable<Attribute> attributes = field.GetCustomAttributes();
-
-                foreach (Attribute attribute in attributes)
-                {
-                    if (attribute is SyncFieldAttribute)
-                    {
-                        object value = field.GetValue(obj);
-
-                        if (typeof(IEnumerable).IsAssignableFrom(value.GetType()))
-                        {
-                            if (typeof(IDictionary).IsAssignableFrom(value.GetType()))
-                            {
-                                int i = 0;
-
-                                foreach (DictionaryEntry entry in value as IDictionary)
-                                {
-                                    List<byte> dicList = new List<byte>();
-                                    dicList.AddRange(ConvertToMessage(entry.Key, fieldName + field.Name + "Key[" + i.ToString() + "]"));
-                                    dicList.AddRange(ConvertToMessage(entry.Value, "Value[" + i.ToString() + "]"));
-                                    output.Add(dicList);
-                                    i++;
-                                }
-                            }
-                            else if (typeof(ICollection).IsAssignableFrom(value.GetType()))
-                            {
-                                int i = 0;
-
-                                foreach (object element in value as ICollection)
-                                {
-                                    ConvertToMessage(output, element, fieldName + field.Name + "[" + i.ToString() + "]");
-                                    i++;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            ConvertToMessage(output, value, fieldName + field.Name);
-                        }
-                    }
-                }
-            }
-
-            if (typeof(ISync).IsAssignableFrom(type))
-            {
-                ISync a = (obj as ISync);
-                byte[] bytes = a.Serialize();
-                ConvertToMessage(output, bytes, fieldName);
-            }
-
-            if (type.BaseType != null)
-            {
-                foreach (List<byte> msg in Inspect(obj, type.BaseType, fieldName))
-                {
-                    output.Add(msg);
-                }
-            }
-
-            return output;
-        }
-
-        private void ConvertToMessage(List<List<byte>> msgStack, object obj, string fieldName)
-        {
-            if (obj is int)
-            {
-                msgStack.Add(((int)obj).Serialize(fieldName));
-            }
-            else if (obj is float)
-            {
-                msgStack.Add(((float)obj).Serialize(fieldName));
-            }
-            else if (obj is bool)
-            {
-                msgStack.Add(((bool)obj).Serialize(fieldName));
-            }
-            else if (obj is char)
-            {
-                msgStack.Add(((char)obj).Serialize(fieldName));
-            }
-            else if (obj is string)
-            {
-                msgStack.Add(((string)obj).Serialize(fieldName));
-            }
-            else if (obj is Vector2)
-            {
-                msgStack.Add(((Vector2)obj).Serialize(fieldName));
-            }
-            else if (obj is Vector3)
-            {
-                msgStack.Add(((Vector3)obj).Serialize(fieldName));
-            }
-            else if (obj is Quaternion)
-            {
-                msgStack.Add(((Quaternion)obj).Serialize(fieldName));
-            }
-            else if (obj is Color)
-            {
-                msgStack.Add(((Color)obj).Serialize(fieldName));
-            }
-            else if (obj is Transform)
-            {
-                msgStack.Add(((Transform)obj).Serialize(fieldName));
-            }
-            else if (obj is byte[])
-            {
-                msgStack.Add(((byte[])obj).Serialize(fieldName));
-            }
-            else
-            {
-                foreach (List<byte> msg in Inspect(obj, obj.GetType(), fieldName + "\\"))
-                {
-                    msgStack.Add(msg);
-                }
-            }
-        }
-
-        private void CallSyncMethods(object obj, byte[] dataBytes)
-        {
-            foreach (MethodInfo method in obj.GetType().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                SyncMethodAttribute attribute = method.GetCustomAttribute<SyncMethodAttribute>();
-
-                if (attribute != null)
-                {
-                    //Debug.Log(method.Name);
-                    method.Invoke(obj, new object[] { dataBytes });
-                }
             }
         }
 
@@ -513,7 +281,324 @@ namespace MultiplayerLibrary.Reflection
                 return bytes;
             }
         }
+
+        //private void OverrideCollectionValue(ref object newObj, int i, object collectionValue)
+        //{
+        //    ICollection collection = newObj as ICollection;
+        //
+        //    Type type = collectionValue.GetType().GetGenericTypeDefinition();
+        //
+        //    if (type == typeof(IList))
+        //    {
+        //        (collection as IList)[i] = collectionValue;
+        //    }
+        //    else if (type == typeof(Queue<>))
+        //    {
+        //        Queue originalQueue = collection as Queue;
+        //        Queue tempQueue = new Queue();
+        //    
+        //        for (int j = 0; j < originalQueue.Count; j++)
+        //        {
+        //            if (j == i)
+        //            {
+        //                tempQueue.Enqueue(collectionValue);
+        //            }
+        //            else
+        //            {
+        //                tempQueue.Enqueue(originalQueue.Dequeue());
+        //            }
+        //        }
+        //    
+        //        originalQueue = new Queue(tempQueue);
+        //    }
+        //    else if (type == typeof(Stack<>))
+        //    {
+        //        Stack originalStack = collection as Stack;
+        //        Stack tempStack = new Stack();
+        //    
+        //        for (int j = 0; j < originalStack.Count; j++)
+        //        {
+        //            if (j == i)
+        //            {
+        //                tempStack.Push(collectionValue);
+        //            }
+        //            else
+        //            {
+        //                tempStack.Push(originalStack.Pop());
+        //            }
+        //        }
+        //    
+        //        originalStack = new Stack(tempStack);
+        //    }
+        //}
+
+        private void OverWriteVar(byte[] data, string name, ref object obj, ref int offset, string fieldName, out bool success)
+        {
+            success = false;
+            object value = null;
+
+            if (obj is int)
+            {
+                value = ((int)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is float)
+            {
+                value = ((float)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is bool)
+            {
+                value = ((bool)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is char)
+            {
+                value = ((char)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is string)
+            {
+                value = ((string)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is Vector2)
+            {
+                value = ((Vector2)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is Vector3)
+            {
+                value = ((Vector3)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is Quaternion)
+            {
+                value = ((Quaternion)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is Color)
+            {
+                value = ((Color)obj).Deserialize(name, data, ref offset, out success);
+            }
+            else if (obj is Transform)
+            {
+                ((Transform)obj).Deserialize(name, data, ref offset, out success);
+                value = obj;
+            }
+            else if (obj is byte[])
+            {
+                value = ((byte[])obj).Deserialize(name, data, ref offset, out success);
+            }
+            else
+            {
+                OverWrite(data, obj, obj.GetType(), name, fieldName, ref offset);
+            }
+
+            if (success)
+            {
+                obj = value;
+                SaveIfChanged(value, fieldName);
+            }
+        }
+        #endregion
+
+        #region READ_METHODS
+        private List<List<byte>> Inspect(object obj, Type type, string fieldName = "", bool valueVar = false)
+        {
+            List<List<byte>> output = new List<List<byte>>();
+
+            foreach (FieldInfo field in type.GetFields(InstanceDeclaredOnlyFilter))
+            {
+                IEnumerable<Attribute> attributes = field.GetCustomAttributes();
+
+                foreach (Attribute attribute in attributes)
+                {
+                    if (attribute is SyncFieldAttribute)
+                    {
+                        Convert(output, field, obj, type, fieldName);
+                    }
+                }
+            }
+
+            if (valueVar)
+            {
+                ConvertValueVar(output, obj, fieldName);
+            }
+
+            if (typeof(ISync).IsAssignableFrom(type))
+            {
+                ISync a = (obj as ISync);
+                byte[] bytes = a.Serialize();
+                ConvertToMessage(output, bytes, fieldName);
+            }
+
+            if (type.BaseType != null)
+            {
+                foreach (List<byte> msg in Inspect(obj, type.BaseType, fieldName))
+                {
+                    output.Add(msg);
+                }
+            }
+
+            return output;
+        }
+
+        private void Convert(List<List<byte>> output, FieldInfo field, object obj, Type type, string fieldName = "")
+        {
+            object value = field.GetValue(obj);
+
+            if (typeof(IEnumerable).IsAssignableFrom(value.GetType()))
+            {
+                if (typeof(IDictionary).IsAssignableFrom(value.GetType()))
+                {
+                    int i = 0;
+
+                    foreach (DictionaryEntry entry in value as IDictionary)
+                    {
+                        ConvertToMessage(output, entry.Key, fieldName + field.Name + "Key[" + i.ToString() + "]");
+                        ConvertToMessage(output, entry.Value, fieldName + field.Name + "Value[" + i.ToString() + "]", true);
+                        i++;
+                    }
+                }
+                else if (typeof(ICollection).IsAssignableFrom(value.GetType()))
+                {
+                    int i = 0;
+
+                    foreach (object element in value as ICollection)
+                    {
+                        ConvertToMessage(output, element, fieldName + field.Name + "[" + i.ToString() + "]");
+                        i++;
+                    }
+                }
+            }
+            else
+            {
+                ConvertToMessage(output, value, fieldName + field.Name);
+            }
+        }
+
+        private void ConvertValueVar(List<List<byte>> output, object obj, string fieldName)
+        {
+            if (typeof(IEnumerable).IsAssignableFrom(obj.GetType()))
+            {
+                if (typeof(IDictionary).IsAssignableFrom(obj.GetType()))
+                {
+                    int i = 0;
+
+                    foreach (DictionaryEntry entry in obj as IDictionary)
+                    {
+                        ConvertToMessage(output, entry.Key, fieldName + "Key[" + i.ToString() + "]");
+                        ConvertToMessage(output, entry.Value, fieldName + "Value[" + i.ToString() + "]", true);
+                        i++;
+                    }
+                }
+                else if (typeof(ICollection).IsAssignableFrom(obj.GetType()))
+                {
+                    int i = 0;
+
+                    foreach (object element in obj as ICollection)
+                    {
+                        ConvertToMessage(output, element, fieldName + "[" + i.ToString() + "]");
+                        i++;
+                    }
+                }
+            }
+            else
+            {
+                ConvertToMessage(output, obj, fieldName);
+            }
+        }
+
+        private void ConvertToMessage(List<List<byte>> msgStack, object obj, string fieldName, bool valueVar = false)
+        {
+            void SaveToSendIfChanged(object obj, List<byte> bytes)
+            {
+                if (SaveIfChanged(obj, fieldName))
+                {
+                    msgStack.Add(bytes);
+                }
+            }
+
+            if (obj is int)
+            {
+                SaveToSendIfChanged(obj, ((int)obj).Serialize(fieldName));
+            }
+            else if (obj is float)
+            {
+                SaveToSendIfChanged(obj, ((float)obj).Serialize(fieldName));
+            }
+            else if (obj is bool)
+            {
+                SaveToSendIfChanged(obj, ((bool)obj).Serialize(fieldName));
+            }
+            else if (obj is char)
+            {
+                SaveToSendIfChanged(obj, ((char)obj).Serialize(fieldName));
+            }
+            else if (obj is string)
+            {
+                SaveToSendIfChanged(obj, ((string)obj).Serialize(fieldName));
+            }
+            else if (obj is Vector2)
+            {
+                SaveToSendIfChanged(obj, ((Vector2)obj).Serialize(fieldName));
+            }
+            else if (obj is Vector3)
+            {
+                SaveToSendIfChanged(obj, ((Vector3)obj).Serialize(fieldName));
+            }
+            else if (obj is Quaternion)
+            {
+                SaveToSendIfChanged(obj, ((Quaternion)obj).Serialize(fieldName));
+            }
+            else if (obj is Color)
+            {
+                SaveToSendIfChanged(obj, ((Color)obj).Serialize(fieldName));
+            }
+            else if (obj is Transform)
+            {
+                SaveToSendIfChanged(obj, ((Transform)obj).Serialize(fieldName));
+            }
+            else if (obj is byte[])
+            {
+                msgStack.Add(((byte[])obj).Serialize(fieldName));
+            }
+            else
+            {
+                foreach (List<byte> msg in Inspect(obj, obj.GetType(), fieldName + "\\", valueVar))
+                {
+                    msgStack.Add(msg);
+                }
+            }
+        }
+
+        private void CallSyncMethods(object obj, byte[] dataBytes)
+        {
+            foreach (MethodInfo method in obj.GetType().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            {
+                SyncMethodAttribute attribute = method.GetCustomAttribute<SyncMethodAttribute>();
+
+                if (attribute != null)
+                {
+                    //Debug.Log(method.Name);
+                    method.Invoke(obj, new object[] { dataBytes });
+                }
+            }
+        }
+        #endregion
+
+        #region PRIVATE_METHODS
+        private bool SaveIfChanged(object value, string fullPath)
+        {
+            if (savedVars.ContainsKey(fullPath))
+            {
+                if (!Equals(savedVars[fullPath], value))
+                {
+                    savedVars[fullPath] = value;
+                    return true;
+                }
+            }
+            else
+            {
+                savedVars.Add(fullPath, value);
+                return true;
+            }
+
+            return true;
+        }
         #endregion
     }
 }
-

@@ -1,3 +1,4 @@
+using Game.Common.Networking.Message;
 using Game.Common.Requests;
 using Game.RoomSelection.RoomsView;
 using MultiplayerLib2.Network.Message;
@@ -9,15 +10,12 @@ using MultiplayerLibrary.Network.Message.Constants;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using UnityEngine;
 
 namespace Game.Common.Networking
 {
     public class ClientGameNetwork : ClientNetworkManager
     {
-        #region PRIVATE_FIELDS
-        Dictionary<MESSAGE_TYPE, int> lastServerMessagesIds = new Dictionary<MESSAGE_TYPE, int>();
-        #endregion
-
         #region ACTIONS
         private Action<RoomData> onGetRoomData = null;
         private Action<RoomData[]> onReceiveRoomDatas = null;
@@ -26,6 +24,7 @@ namespace Game.Common.Networking
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         private Action<float> onTimerUpdate = null;
         private Action onMatchFinished = null;
+        private Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage = null;
         #endregion
 
         #region PROPERTIES
@@ -55,13 +54,31 @@ namespace Game.Common.Networking
                     default:
                         break;
                 }
+
+                GAME_MESSAGE_TYPE gameMessageType = GameMessageFormater.GetMessageType(data);
+
+                switch (gameMessageType)
+                {
+                    case GAME_MESSAGE_TYPE.TURRET_ROTATION:
+                        ProcessTurretRotation(data);
+                        break;
+                    case GAME_MESSAGE_TYPE.TURRET_SHOOT:
+                        ProcessTurretShot(ip, data);
+                        break;
+                    case GAME_MESSAGE_TYPE.BULLET_POSITION:
+                        ProcessBulletPosition(data);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
         #endregion
 
         #region PUBLIC_METHODS
         public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, 
-            Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished)
+            Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished, 
+            Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage)
         {
             this.onGetRoomData = onGetRoomData;
             this.onFullRoom = onFullRoom;
@@ -69,13 +86,58 @@ namespace Game.Common.Networking
             this.onReceiveGameMessage = onReceiveGameMessage;
             this.onTimerUpdate = onTimerUpdate;
             this.onMatchFinished = onMatchFinished;
+            this.onReceiveServerGameMessage = onReceiveServerGameMessage;
         }
         #endregion
 
         #region DATA_RECEIVE_PROCESS
+        private void ProcessBulletPosition(byte[] data)
+        {
+            CheckIfMessageIdIsCorrect(data, (int)GAME_MESSAGE_TYPE.BULLET_POSITION);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            (int bulletId, Vector2 position) result = BulletPositionMessage.Deserialize(data);
+
+            onReceiveServerGameMessage.Invoke(GAME_MESSAGE_TYPE.BULLET_POSITION, result);
+        }
+
+        private void ProcessTurretRotation(byte[] data)
+        {
+            CheckIfMessageIdIsCorrect(data, (int)GAME_MESSAGE_TYPE.TURRET_ROTATION);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            (int turretId, Quaternion rotation) result = TurretRotationMessage.Deserialize(data);
+
+            onReceiveServerGameMessage.Invoke(GAME_MESSAGE_TYPE.TURRET_ROTATION, result);
+        }
+
+        private void ProcessTurretShot(IPEndPoint ip, byte[] data)
+        {
+            TurretShootMessage turretShotMessage = new TurretShootMessage(TurretShootMessage.Deserialize(data));
+            HandleMessageError(data, (int)GAME_MESSAGE_TYPE.TURRET_SHOOT, turretShotMessage, TurretShootMessage.GetMessageSize(), TurretShootMessage.GetHeaderSize());
+
+            if (!wasLastMessageSane)
+            {
+                SendResendDataMessage((int)GAME_MESSAGE_TYPE.TURRET_SHOOT, ip);
+                return;
+            }
+
+            (int turretId, int bulletId) result = TurretShootMessage.Deserialize(data);
+
+            onReceiveServerGameMessage.Invoke(GAME_MESSAGE_TYPE.TURRET_SHOOT, result);
+        }
+
         private void ProcessTimer(byte[] data)
         {
-            CheckIfMessageIdIsCorrect(data, MESSAGE_TYPE.TIMER);
+            CheckIfMessageIdIsCorrect(data, (int)MESSAGE_TYPE.TIMER);
 
             if (!wasLastMessageSane)
             {
@@ -199,12 +261,28 @@ namespace Game.Common.Networking
         #endregion
 
         #region SEND_DATA_METHODS
+        public void SendBulletBornMessage(int id, Vector2 pos, Vector2 dir)
+        {
+            BulletBornMessage bulletBornMessage = new BulletBornMessage((id, pos, dir));
+            byte[] data = bulletBornMessage.Serialize();
+
+            SaveAndSendData((int)GAME_MESSAGE_TYPE.BULLET_BORN, data);
+        }
+
+        public void SendPlayerPosition(Vector2 position)
+        {
+            PlayerPositionMessage playerPositionMessage = new PlayerPositionMessage((assignedId, position));
+            byte[] data = playerPositionMessage.Serialize();
+
+            SendData(data);
+        }
+
         public void SendGameMessage(int clientId, GAME_MESSAGE_TYPE messageType)
         {
             GameMessage gameMessage = new GameMessage((clientId, (int)messageType));
             byte[] data = gameMessage.Serialize();
 
-            OnSendData(MESSAGE_TYPE.GAME_MESSAGE, data);
+            SaveAndSendData((int)MESSAGE_TYPE.GAME_MESSAGE, data);
         }
 
         public void SendRoomDatasRequest(Action<RoomData[]> onReceiveRoomDatas)
@@ -214,30 +292,7 @@ namespace Game.Common.Networking
             NoticeMessage noticeMessage = new NoticeMessage((int)NOTICE.ROOM_REQUEST);
             byte[] data = noticeMessage.Serialize();
 
-            OnSendData(MESSAGE_TYPE.NOTICE, data);
-        }
-        #endregion
-
-        #region PRIVATE_METHODS
-        private void CheckIfMessageIdIsCorrect(byte[] data, MESSAGE_TYPE messageType)
-        {
-            int messageId = BitConverter.ToInt32(data, sizeof(int));
-
-            if (lastServerMessagesIds.ContainsKey(messageType))
-            {
-                if (lastServerMessagesIds[messageType] <= messageId)
-                {
-                    lastServerMessagesIds[messageType] = messageId;
-                }
-                else
-                {
-                    wasLastMessageSane = false;
-                }
-            }
-            else
-            {
-                lastServerMessagesIds.Add(messageType, messageId);
-            }
+            SaveAndSendData((int)MESSAGE_TYPE.NOTICE, data);
         }
         #endregion
     }

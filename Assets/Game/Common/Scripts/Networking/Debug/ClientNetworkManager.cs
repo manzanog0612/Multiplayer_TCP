@@ -212,7 +212,7 @@ namespace MultiplayerLibrary.Entity
 
             byte[] data = resendDataMessage.Serialize(admissionTimeStamp);
 
-            OnSendData(MESSAGE_TYPE.RESEND_DATA, data);
+            SaveAndSendData((int)MESSAGE_TYPE.RESEND_DATA, data);
         }
 
         public override void SendDisconnectClient(int id)
@@ -228,7 +228,7 @@ namespace MultiplayerLibrary.Entity
 
             byte[] data = removeClientMessage.Serialize(clients[id].timeStamp);
 
-            OnSendData(MESSAGE_TYPE.ENTITY_DISCONECT, data);
+            SaveAndSendData((int)MESSAGE_TYPE.ENTITY_DISCONECT, data);
         }
 
         public void SendConnectRequest(RoomData roomData)
@@ -238,7 +238,7 @@ namespace MultiplayerLibrary.Entity
 
             byte[] data = connectRequestMessage.Serialize(admissionTimeStamp);
 
-            OnSendData(MESSAGE_TYPE.CONNECT_REQUEST, data);
+            SaveAndSendData((int)MESSAGE_TYPE.CONNECT_REQUEST, data);
         }
 
         public void SendHandShake()
@@ -250,10 +250,10 @@ namespace MultiplayerLibrary.Entity
 
             byte[] data = handShakeMessage.Serialize(admissionTimeStamp);
 
-            OnSendData(MESSAGE_TYPE.HAND_SHAKE, data);
+            SaveAndSendData((int)MESSAGE_TYPE.HAND_SHAKE, data);
         }
 
-        protected void OnSendData(MESSAGE_TYPE messageType, byte[] data)
+        protected void SaveAndSendData(int messageType, byte[] data)
         {
             SaveSentMessage(messageType, data, latency * latencyMultiplier);
             SendData(data);
@@ -261,11 +261,11 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region AUX
-        //[SyncMethod]
-        //private void SendData2(object data)
-        //{
-        //    SendData(data as byte[]);
-        //}
+        [SyncMethod]
+        private void SendData2(object data)
+        {
+            SendData(data as byte[]);
+        }
 
         [SyncMethod]
         public override void SendData(byte[] data)
