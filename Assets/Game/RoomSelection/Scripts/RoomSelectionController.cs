@@ -15,19 +15,24 @@ namespace Game.RoomSelection
         {
             base.Init();
             
-            roomSelectionView.Init(OnGoBack, OnEnterRoom, OnCreateRoom);
+            roomSelectionView.Init(OnGoBack, OnEnterRoom, OnCreateRoom, AskForRooms);
             
             clientHandler.StartClient();
-            
-            clientHandler.SendRoomsDataRequest(
-                onReceiveRoomDatas: (roomsDatas) =>
-                {
-                    roomSelectionView.CreateRoomViews(roomsDatas);
-                });
+
+            AskForRooms();
         }
         #endregion
 
         #region PRIVATE_METHODS
+        private void AskForRooms()
+        {
+            clientHandler.SendRoomsDataRequest(
+               onReceiveRoomDatas: (roomsDatas) =>
+               {
+                   roomSelectionView.CreateRoomViews(roomsDatas);
+               });
+        }
+
         private void OnGoBack()
         {
             ChangeScene(SCENES.LOGIN);

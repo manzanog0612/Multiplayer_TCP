@@ -16,6 +16,7 @@ namespace Game.RoomSelection
         [SerializeField] private Button btnBack = null;
         [SerializeField] private Button btnEnterRoom = null;
         [SerializeField] private Button btnCreateRoom = null;
+        [SerializeField] private Button btnRefresh = null;
 
         [Header("RoomView Configurations")]
         [SerializeField] private GameObject roomViewPrefab = null;
@@ -34,11 +35,12 @@ namespace Game.RoomSelection
         #endregion
 
         #region PUBLIC_METHODS
-        public void Init(Action onPressBack, Action onPressEnterRoom, Action onPressCreateRoom)
+        public void Init(Action onPressBack, Action onPressEnterRoom, Action onPressCreateRoom, Action onRefresh)
         {
             btnBack.onClick.AddListener(() => onPressBack.Invoke());
             btnEnterRoom.onClick.AddListener(() => onPressEnterRoom.Invoke());
             btnCreateRoom.onClick.AddListener(() => onPressCreateRoom.Invoke());
+            btnRefresh.onClick.AddListener(() => onRefresh.Invoke());
 
             roomViewsPool = new ObjectPool<RoomView>(CreateRoomView, OnGetRoomView, OnReleaseRoomView);
         }
