@@ -11,7 +11,11 @@ namespace Game.Match.Entity.Bullet
 
         public void Init(Action<Collider2D, int> onColliderEnter)
         {
-            objectCollider.Init((collision) => onColliderEnter(collision, id));
+            objectCollider.Init((collision) => 
+            { 
+                onColliderEnter(collision, id);  
+                Destroy(gameObject);
+            });
         }
 
         public void SetPosition(Vector2 pos)

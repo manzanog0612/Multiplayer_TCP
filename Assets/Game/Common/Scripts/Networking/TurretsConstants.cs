@@ -5,10 +5,10 @@ namespace Game.Common.Networking
 {
     public class TurretsConstants
     {
-        public const float cooldown = 0.5f;
+        public const float cooldown = 1.5f;
         public const float rotDuration = 0.1f;
-        public const float minDistanceToShoot = 10;
-        public const float bulletSpeed = 10f;
+        public const float minDistanceToShoot = 7;
+        public const float bulletSpeed = 15f;
 
         public const float xPosLeft = -20.4f;
         public const float xPosMiddle = 0f;

@@ -127,7 +127,7 @@ namespace Game.Common.Networking
                 playersPositions.Remove(clientId);
             }
 
-            if (clients.Count == 0 && matchEnded)
+            if (clients.Count == 0 && (matchEnded || matchStarted))
             {
                 Application.Quit();
             }
@@ -176,7 +176,6 @@ namespace Game.Common.Networking
             BulletPositionMessage bulletPositionMessage = new BulletPositionMessage((bulletId, position));
             byte[] data = bulletPositionMessage.Serialize();
 
-            Debug.Log("Send bullet data id: " + bulletId);
             SendData(data);
         }
 
@@ -308,6 +307,7 @@ namespace Game.Common.Networking
 
             if (bullet != null)
             {
+                Debug.Log("Remove bullet id:" + bulletId);
                 bullets.Remove(bullet);
             }
         }

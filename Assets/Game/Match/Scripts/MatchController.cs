@@ -4,11 +4,8 @@ using Game.Match.Controllers;
 using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
 using MultiplayerLibrary.Reflection;
-using MultiplayerLibrary.Reflection.Attributes;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 using CharacterController = Game.Match.Entity.Player.CharacterController;
@@ -36,6 +33,7 @@ namespace Game.Match
         #region PRIVATE_FIELDS
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
+        private bool matchEnded = false;
         //[SyncField]private Dictionary<int, Dictionary<string, float>> dic = new Dictionary<int, Dictionary<string, float>>();
         #endregion
 
@@ -75,7 +73,7 @@ namespace Game.Match
             sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
             sessionHandler.onReceiveServerGameMessage = turretsController.OnReceiveTurretData;
-            sessionHandler.onMatchFinished = OnFinishMatch;
+            sessionHandler.onMatchFinished = FinishMatch;
         }
 
         private void Update()
@@ -91,6 +89,11 @@ namespace Game.Match
             //        dic[1] = new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f };
             //    }
             //}
+
+            if (matchEnded)
+            {
+                return;
+            }
 
             clientHandler.SendPlayerPosition(characterControllers[controlledPlayer].transform.position);
         }
@@ -186,13 +189,18 @@ namespace Game.Match
                     break;
                 case GAME_MESSAGE_TYPE.PLAYER_HIT_EFFECTIVE:
                     characterControllers[clientId].TakeHit();
+
+                    if (clientId == controlledPlayer)
+                    {
+                        CheckPlayerAlive();
+                    }
                     break;
                 default:
                     break;
             }
         }
 
-        private void OnFinishMatch()
+        private void FinishMatch()
         {
             int higherLife = -1;
             int idHigherLife = 0;
@@ -207,8 +215,9 @@ namespace Game.Match
             }
 
             playerController.gameObject.SetActive(false);
-
+            matchEnded = true;
             matchView.SetResultView(idHigherLife == clientHandler.ClientId);
+            clientHandler.DisconectClient();
         }
 
         private void OnClientDisconnected()
@@ -225,23 +234,31 @@ namespace Game.Match
                     break;
                 }
             }
+
+            if (clientHandler.Clients.Count == 1) //only this client alive
+            {
+                FinishMatch();
+            }
         }
 
         private void OnGoBack()
         {
-            clientHandler.DisconectClient();
+            //clientHandler.DisconectClient();
 
             ChangeScene(SCENES.LOGIN);
         }
 
-        private Transform OnGetPlayerTransform(int id)
+        private void CheckPlayerAlive()
         {
-            if (characterControllers.ContainsKey(id))
+            if (characterControllers[controlledPlayer].Life < 0)
             {
-                return characterControllers[id].GetComponent<Transform>();
+                //clientHandler.SendGameMessage(controlledPlayer, GAME_MESSAGE_TYPE.PLAYER_DEAD);
+                FinishMatch();
+               // playerController.gameObject.SetActive(false);
+                //clientHandler.DisconectClient();
+                //matchEnded = true;
+                //matchView.SetResultView(false);
             }
-
-            return null;
         }
         #endregion
     }

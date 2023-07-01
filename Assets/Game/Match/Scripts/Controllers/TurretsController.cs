@@ -117,7 +117,6 @@ namespace Game.Match.Controllers
             if (bullet != null)
             {
                 bullets.Remove(bullet);
-                Destroy(bullet.gameObject);
             }
         }
         #endregion

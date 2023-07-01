@@ -9,6 +9,7 @@ namespace Game.Common.Requests
         TURRET_SHOOT,
         BULLET_BORN,
         BULLET_POSITION,
-        BULLET_DEATH
+        BULLET_DEATH,
+        PLAYER_DEAD
     }
 }

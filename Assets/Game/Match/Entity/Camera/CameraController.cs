@@ -11,6 +11,11 @@ namespace Game.Match.Entity.Camera
         #region UNITY_CALLS
         public void Update()
         {
+            if (player == null)
+            {
+                return;
+            }
+
             Vector3 playerPos = player.position;
             playerPos.z = -10;
             transform.position = playerPos;
