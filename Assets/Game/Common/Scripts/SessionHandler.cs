@@ -14,7 +14,6 @@ namespace Game.Common
         #endregion
 
         #region PRIVATE_FIELDS
-        private PlayerModel playerModel = null;
         private RoomData roomData = null;
         #endregion
 
@@ -28,17 +27,11 @@ namespace Game.Common
         #endregion
 
         #region PROPERTIES
-        public PlayerModel PlayerModel { get => playerModel; }
         public RoomData RoomData { get => roomData; }
         public ClientHandler ClientHandler { get => clientHandler; }
         #endregion
 
         #region PUBLIC_METHODS
-        public void SetPlayerName(string name)
-        {
-            playerModel.SetName(name);
-        }
-
         public void SetRoomData(RoomData roomData)
         {
             this.roomData = roomData;
@@ -103,8 +96,6 @@ namespace Game.Common
         protected override void Initialize()
         {
             base.Initialize();
-
-            playerModel = new PlayerModel();
 
             clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage, 
                                     OnUpdateTimer, OnMatchFinished, OnReceiveServerGameMessage);

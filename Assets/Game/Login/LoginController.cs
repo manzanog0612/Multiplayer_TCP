@@ -8,7 +8,6 @@ namespace Game.Login
     {
         #region EXPOSED_FIELDS
         [SerializeField] private LoginView loginView = null;
-        [SerializeField] private int minCharactersForName = 3;
         #endregion
 
         #region OVERRIDE_METHODS
@@ -16,27 +15,13 @@ namespace Game.Login
         {
             base.Init();
 
-            loginView.Init(OnPlayerNameChanged, OnPressLogin);
+            loginView.Init(OnPressLogin);
         }
         #endregion
 
         #region PRIVATE_METHODS
-        private void OnPlayerNameChanged(string playerName)
+        private void OnPressLogin()
         {
-            if (playerName.Length < minCharactersForName && loginView.LoginButtonsIsOn)
-            {
-                loginView.ToggleLoginButton(false);
-            }
-            else if (playerName.Length >= minCharactersForName && !loginView.LoginButtonsIsOn)
-            {
-                loginView.ToggleLoginButton(true);
-            }
-        }
-
-        private void OnPressLogin(string playerName)
-        {
-            sessionHandler.SetPlayerName(playerName);
-
             ChangeScene(SCENES.ROOM_SELECTION);
         }
         #endregion
