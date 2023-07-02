@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace MultiplayerLibrary.Reflection
 {
@@ -228,65 +229,71 @@ namespace MultiplayerLibrary.Reflection
                         else
                         {
                             i++;
-                            //OverWrite(data, obj, type, fullPath, ref offset, path);
                         }
-
-                        //if (i == index)
-                        //{
-                        //    dicValue = (newObj as IDictionary)[entry.Key];
-                        //    dicKey = entry.Key;
-                        //    found = true;
-                        //    break;
-                        //}
-                        //else
-                        //{
-                        //    i++;
-                        //}
                     }
-
-                    //if (isDicValue)
-                    //{
-                    //    if (found)
-                    //    {
-                    //        DeserializeVar(data, pathParts[0], dicValue, ref offset, fullPath, out bool success);//
-                    //
-                    //        if (success)
-                    //        {
-                    //            (newObj as IDictionary)[dicKeys.Pop()] = dicValue;
-                    //        }
-                    //    }
-                    //    else
-                    //    {
-                    //        (newObj as IDictionary).Add(dicKeys.Pop(), dicValue);
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    dicKeys.Push(dicKey);
-                    //}
-
-                    //return;
                 }
                 else if (typeof(ICollection).IsAssignableFrom(newObj.GetType()))
                 {
-                    //object collectionObj = null;
-                    //
-                    //foreach (object element in newObj as ICollection)
-                    //{
-                    //    string fielName = field.Name + "[" + i.ToString() + "]";
-                    //
-                    //    if (Equals(fielName, pathParts[0]))
-                    //    {
-                    //        collectionObj = element;
-                    //        break;
-                    //    }
-                    //    else
-                    //    {
-                    //        i++;
-                    //    }
-                    //}
-                    //
-                    //DeserializeVar(data, pathParts[0], collectionObj, ref offset, fullPath, out bool success);
+                    int i = 0;
+                    foreach (object element in newObj as ICollection)
+                    {
+                        string indexPath = "[" + i.ToString() + "]";
+                    
+                        if (path + indexPath == fullPath)
+                        {
+                            object var = DeserializeVar(data, path + indexPath, element, ref offset, fullPath, out bool success);
+
+                            if (success)
+                            {
+                                //OverrideCollectionValue(ref newObj, i, var);
+                                if (var is int)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (int)var);
+                                }
+                                else if (var is float)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (float)var);
+                                }
+                                else if (var is bool)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (bool)var);
+                                }
+                                else if (var is char)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (char)var);
+                                }
+                                else if (var is string)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (string)var);
+                                }
+                                else if (var is Vector2)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (Vector2)var);
+                                }
+                                else if (var is Vector3)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (Vector3)var);
+                                }
+                                else if (var is Quaternion)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (Quaternion)var);
+                                }
+                                else if (var is Color)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (Color)var);
+                                }
+                                else if (var is Transform)
+                                {
+                                    OverrideCollectionValue(ref newObj, i, (Transform)var);
+                                }
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
                 }
             }
             else
@@ -363,108 +370,143 @@ namespace MultiplayerLibrary.Reflection
             return success ? value : null;
         }
 
-        /*private void OverrideCollectionValue(ref object newObj, int i, object collectionValue)
+        private void OverrideCollectionValue<T>(ref object newObj, int i, T collectionValue)
         {
             ICollection collection = newObj as ICollection;
 
-            Type type = collectionValue.GetType().GetGenericTypeDefinition();
+            Type typegeneric = newObj.GetType().GetGenericTypeDefinition();
+            bool isAddedValue = collection.Count <= i;
 
-            if (type == typeof(IList))
+            if (typegeneric == typeof(List<>) || typegeneric == typeof(Array))
             {
-                (collection as IList)[i] = collectionValue;
-            }
-            else if (type == typeof(Queue<>))
-            {
-                Queue originalQueue = collection as Queue;
-                Queue tempQueue = new Queue();
-
-                for (int j = 0; j < originalQueue.Count; j++)
+                if (isAddedValue)
                 {
-                    if (j == i)
+                    (newObj as IList).Add(collectionValue);                    
+                }
+                else
+                {
+                    (newObj as IList)[i] = collectionValue;
+                }
+            }
+            else if (typegeneric == typeof(Queue<>))
+            {
+                Queue<T> originalQueue = newObj as Queue<T>;
+
+                if (isAddedValue)
+                {
+                    originalQueue.Enqueue(collectionValue);
+                }
+                else
+                {
+                    Queue<T> tempQueue = new Queue<T>();
+
+                    int count = originalQueue.Count;
+
+                    for (int j = 0; j < count; j++)
                     {
-                        tempQueue.Enqueue(collectionValue);
+                        if (j == i)
+                        {
+                            tempQueue.Enqueue(collectionValue);
+                            originalQueue.Dequeue();
+                        }
+                        else
+                        {
+                            tempQueue.Enqueue(originalQueue.Dequeue());
+                        }
                     }
-                    else
+
+                    for (int j = 0; j < count; j++)
                     {
-                        tempQueue.Enqueue(originalQueue.Dequeue());
+                        originalQueue.Enqueue(tempQueue.Dequeue());
                     }
                 }
-
-                originalQueue = new Queue(tempQueue);
             }
-            else if (type == typeof(Stack<>))
+            else if (typegeneric == typeof(Stack<>))
             {
-                Stack originalStack = collection as Stack;
-                Stack tempStack = new Stack();
+                Stack<T> originalStack = newObj as Stack<T>;
 
-                for (int j = 0; j < originalStack.Count; j++)
+                if (isAddedValue)
                 {
-                    if (j == i)
-                    {
-                        tempStack.Push(collectionValue);
-                    }
-                    else
-                    {
-                        tempStack.Push(originalStack.Pop());
-                    }
+                    originalStack.Push(collectionValue);
                 }
+                else
+                {
+                    Stack<T> tempStack = new Stack<T>();
+                    int count = originalStack.Count;
 
-                originalStack = new Stack(tempStack);
+                    for (int j = 0; j < count; j++)
+                    {
+                        if (j == i)
+                        {
+                            tempStack.Push(collectionValue);
+                            originalStack.Pop();
+                        }
+                        else
+                        {
+                            tempStack.Push(originalStack.Pop());
+                        }
+                    }
+
+                    for (int j = 0; j < count; j++)
+                    {
+                        originalStack.Push(tempStack.Pop());
+                    }
+                }                    
             }
         }
 
-        private object GetVarData(byte[] data, string name, object obj, ref int offset, string fullPath)
-        {
-            bool success = false;
-            object value = null;
-
-            if (obj is int)
-            {
-                value = NetDeserialization.DeserializeInt(name, data, ref offset, out success);
-            }
-            else if (obj is float)
-            {
-                value = NetDeserialization.DeserializeFloat(name, data, ref offset, out success);
-            }
-            else if (obj is bool)
-            {
-                value = NetDeserialization.DeserializeBool(name, data, ref offset, out success);
-            }
-            else if (obj is char)
-            {
-                value = NetDeserialization.DeserializeChar(name, data, ref offset, out success);
-            }
-            else if (obj is string)
-            {
-                value = NetDeserialization.DeserializeString(name, data, ref offset, out success);
-            }
-            else if (obj is Vector2)
-            {
-                value = NetDeserialization.DeserializeVector2(name, data, ref offset, out success);
-            }
-            else if (obj is Vector3)
-            {
-                value = NetDeserialization.DeserializeVector3(name, data, ref offset, out success);
-            }
-            else if (obj is Quaternion)
-            {
-                value = NetDeserialization.DeserializeQuaternion(name, data, ref offset, out success);
-            }
-            else if (obj is Color)
-            {
-                value = NetDeserialization.DeserializeColor(name, data, ref offset, out success);
-            }
-            else if (obj is byte[])
-            {
-                value = NetDeserialization.DeserializeBytes(name, data, ref offset, out success);
-            }
-            else
-            {
-                OverWrite(data, obj, obj.GetType(), name, ref offset, fullPath);
-            }
-
-            return success ? value : null;
-        }*/
+        //private object GetVarData(byte[] data, string name, object obj, ref int offset, string fullPath)
+        //{
+        //    bool success = false;
+        //    object value = null;
+        //
+        //    if (obj is int)
+        //    {
+        //        value = NetDeserialization.DeserializeInt(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is float)
+        //    {
+        //        value = NetDeserialization.DeserializeFloat(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is bool)
+        //    {
+        //        value = NetDeserialization.DeserializeBool(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is char)
+        //    {
+        //        value = NetDeserialization.DeserializeChar(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is string)
+        //    {
+        //        value = NetDeserialization.DeserializeString(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is Vector2)
+        //    {
+        //        value = NetDeserialization.DeserializeVector2(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is Vector3)
+        //    {
+        //        value = NetDeserialization.DeserializeVector3(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is Quaternion)
+        //    {
+        //        value = NetDeserialization.DeserializeQuaternion(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is Color)
+        //    {
+        //        value = NetDeserialization.DeserializeColor(name, data, ref offset, out success);
+        //    }
+        //    else if (obj is byte[])
+        //    {
+        //        value = NetDeserialization.DeserializeBytes(name, data, ref offset, out success);
+        //    }
+        //    else
+        //    {
+        //        OverWrite(data, obj, obj.GetType(), name, ref offset, fullPath);
+        //    }
+        //
+        //    return success ? value : null;
+        //}
 
         #endregion
 
