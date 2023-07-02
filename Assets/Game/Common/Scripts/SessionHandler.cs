@@ -88,7 +88,7 @@ namespace Game.Common
 
         private void OnReceiveServerGameMessage(GAME_MESSAGE_TYPE messageType, object data)
         {
-            onReceiveServerGameMessage.Invoke(messageType, data);
+            onReceiveServerGameMessage?.Invoke(messageType, data);
         }
         #endregion
 

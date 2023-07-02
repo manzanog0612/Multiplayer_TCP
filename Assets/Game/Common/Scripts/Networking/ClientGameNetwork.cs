@@ -102,7 +102,7 @@ namespace Game.Common.Networking
 
             (int bulletId, Vector2 position) result = BulletPositionMessage.Deserialize(data);
 
-            onReceiveServerGameMessage.Invoke(GAME_MESSAGE_TYPE.BULLET_POSITION, result);
+            onReceiveServerGameMessage?.Invoke(GAME_MESSAGE_TYPE.BULLET_POSITION, result);
         }
 
         private void ProcessTurretRotation(byte[] data)
@@ -116,7 +116,7 @@ namespace Game.Common.Networking
 
             (int turretId, Quaternion rotation) result = TurretRotationMessage.Deserialize(data);
 
-            onReceiveServerGameMessage.Invoke(GAME_MESSAGE_TYPE.TURRET_ROTATION, result);
+            onReceiveServerGameMessage?.Invoke(GAME_MESSAGE_TYPE.TURRET_ROTATION, result);
         }
 
         private void ProcessTurretShot(IPEndPoint ip, byte[] data)
@@ -132,7 +132,7 @@ namespace Game.Common.Networking
 
             (int turretId, int bulletId) result = TurretShootMessage.Deserialize(data);
 
-            onReceiveServerGameMessage.Invoke(GAME_MESSAGE_TYPE.TURRET_SHOOT, result);
+            onReceiveServerGameMessage?.Invoke(GAME_MESSAGE_TYPE.TURRET_SHOOT, result);
         }
 
         private void ProcessTimer(byte[] data)
