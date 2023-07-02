@@ -4,7 +4,10 @@ using Game.Match.Controllers;
 using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
 using MultiplayerLibrary.Reflection;
+using MultiplayerLibrary.Reflection.Attributes;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,7 +37,14 @@ namespace Game.Match
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
         private bool matchEnded = false;
-        //[SyncField]private Dictionary<int, Dictionary<string, float>> dic = new Dictionary<int, Dictionary<string, float>>();
+        //[SyncField]private Dictionary<int, Dictionary<string, char>> dic = new Dictionary<int, Dictionary<string, char>>();
+        //Dictionary<string, char> val1 = new Dictionary<string, char>();
+        //Dictionary<string, char> val2 = new Dictionary<string, char>();
+        //[SyncField] private Dictionary<int, char> dic2 = new Dictionary<int, char>();
+        [SyncField] private List<char> list = new List<char>();
+        [SyncField] private Stack<int> stack = new Stack<int>();
+        [SyncField] private Queue<string> queue = new Queue<string>();
+        [SyncField] private char[] array;
         #endregion
 
         #region OVERRIDE_METHODS
@@ -64,9 +74,30 @@ namespace Game.Match
 
             //characterController.Init(Color.red, spawnPoints[0].position, false);//
 
-            //dic.Add(1, new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f });
-            //dic.Add(2, new Dictionary<string, float> { ["b"] = 0.2f, ["bb"] = 0.22f });
+            //val1.Add("a", 'A');
+            //val1.Add("aa", 'B');
+            //val2.Add("b", 'C');
+            //val2.Add("bb", 'D');
+            //dic.Add(1, val1);
+            //dic.Add(2, val2);
+            //dic2.Add(1, 'e');
+            //dic2.Add(2, 'f');
+            list.Add('a');
+            list.Add('b');
+            list.Add('c');
+            stack.Push(1);
+            stack.Push(2);
+            stack.Push(3);
+            queue.Enqueue("AA");
+            queue.Enqueue("BB");
+            queue.Enqueue("CC");
+            array = new char[3];
+            array[0] = 'a';
+            array[1] = 'b';
+            array[2] = 'c';
 
+            Type type = array.GetType();
+            bool isArray = type.IsArray;
             reflectionHandler.SetEntryPoint(this);
 
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
@@ -78,17 +109,59 @@ namespace Game.Match
 
         private void Update()
         {
-            //if (Input.GetKeyDown(KeyCode.Space))
-            //{
-            //    if (dic[1] == new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f })
-            //    {
-            //        dic[1] = new Dictionary<string, float> { ["b"] = 0.2f, ["bb"] = 0.22f };
-            //    }
-            //    else
-            //    {
-            //        dic[1] = new Dictionary<string, float> { ["a"] = 0.1f, ["aa"] = 0.11f };
-            //    }
-            //}
+#if UNITY_EDITOR
+#else
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                //if (Equals(dic[1], val1))
+                //{
+                //    dic[1] = val2;
+                //}
+                //else
+                //{
+                //    dic[1] = val1;
+                //}
+                //
+                //if (Equals(dic2[1], 'e'))
+                //{
+                //    dic2[1] = 'f';
+                //}
+                //else
+                //{
+                //    dic2[1] = 'e';
+                //}
+
+                if (list[1] == 'b')
+                {
+                    list[1] = 'c';
+                }
+                else
+                {
+                    list[1] = 'b';
+                }
+
+                if (stack.Pop() == 3)
+                {
+                    stack.Push(4);
+                }
+                else
+                {
+                    stack.Push(3);
+                }
+
+                string val = queue.Dequeue();
+                queue.Enqueue(val);
+
+                if (array[0] == 'a')
+                {
+                    array[0] = 'c';
+                }
+                else
+                {
+                    array[0] = 'a';
+                }
+            }
+#endif
 
             if (matchEnded)
             {
@@ -243,8 +316,6 @@ namespace Game.Match
 
         private void OnGoBack()
         {
-            //clientHandler.DisconectClient();
-
             ChangeScene(SCENES.LOGIN);
         }
 
@@ -252,12 +323,7 @@ namespace Game.Match
         {
             if (characterControllers[controlledPlayer].Life < 0)
             {
-                //clientHandler.SendGameMessage(controlledPlayer, GAME_MESSAGE_TYPE.PLAYER_DEAD);
                 FinishMatch();
-               // playerController.gameObject.SetActive(false);
-                //clientHandler.DisconectClient();
-                //matchEnded = true;
-                //matchView.SetResultView(false);
             }
         }
         #endregion

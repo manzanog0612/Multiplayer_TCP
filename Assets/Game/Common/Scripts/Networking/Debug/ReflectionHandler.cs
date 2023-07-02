@@ -125,13 +125,16 @@ namespace MultiplayerLibrary.Reflection
                 OverWriteValue(data, obj, fullPath, ref offset, path, isObjectValue);
             }
 
-            //if (typeof(ISync).IsAssignableFrom(type))
-            //{
-            //    byte[] value = new byte[0].Deserialize(path, data, ref offset, out bool success);
-            //
-            //    (obj as ISync).Deserialize(value);
-            //    return;
-            //}
+            if (typeof(ISync).IsAssignableFrom(type))
+            {
+                byte[] value = NetDeserialization.DeserializeBytes(path, data, ref offset, out bool success);
+
+                if (success)
+                { 
+                    (obj as ISync).Deserialize(value); 
+                }
+                return null;
+            }
 
             return null;
         }
@@ -374,21 +377,32 @@ namespace MultiplayerLibrary.Reflection
         {
             ICollection collection = newObj as ICollection;
 
-            Type typegeneric = newObj.GetType().GetGenericTypeDefinition();
+            Type type = newObj.GetType();
+            Type typeGeneric = null;
+
+            if (!type.IsArray)
+            {
+                typeGeneric = newObj.GetType().GetGenericTypeDefinition();
+            }
+
             bool isAddedValue = collection.Count <= i;
 
-            if (typegeneric == typeof(List<>) || typegeneric == typeof(Array))
+            if (type.IsArray)
+            {
+                (newObj as T[])[i] = collectionValue;
+            }
+            else if (typeGeneric == typeof(List<>))
             {
                 if (isAddedValue)
                 {
-                    (newObj as IList).Add(collectionValue);                    
+                    (newObj as IList).Add(collectionValue);
                 }
                 else
                 {
                     (newObj as IList)[i] = collectionValue;
                 }
             }
-            else if (typegeneric == typeof(Queue<>))
+            else if (typeGeneric == typeof(Queue<>))
             {
                 Queue<T> originalQueue = newObj as Queue<T>;
 
@@ -421,7 +435,7 @@ namespace MultiplayerLibrary.Reflection
                     }
                 }
             }
-            else if (typegeneric == typeof(Stack<>))
+            else if (typeGeneric == typeof(Stack<>))
             {
                 Stack<T> originalStack = newObj as Stack<T>;
 
@@ -451,7 +465,7 @@ namespace MultiplayerLibrary.Reflection
                     {
                         originalStack.Push(tempStack.Pop());
                     }
-                }                    
+                }
             }
         }
 
@@ -534,12 +548,12 @@ namespace MultiplayerLibrary.Reflection
                 InspectValue(output, obj, fieldName);
             }
 
-            //if (typeof(ISync).IsAssignableFrom(type))
-            //{
-            //    ISync a = (obj as ISync);
-            //    byte[] bytes = a.Serialize();
-            //    ConvertToMessage(output, bytes, fieldName);
-            //}
+            if (typeof(ISync).IsAssignableFrom(type))
+            {
+                ISync a = (obj as ISync);
+                byte[] bytes = a.Serialize();
+                ConvertToMessage(output, bytes, fieldName);
+            }
 
             if (type.BaseType != null)
             {
