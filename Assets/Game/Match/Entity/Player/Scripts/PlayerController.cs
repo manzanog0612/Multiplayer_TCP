@@ -1,4 +1,5 @@
 using Game.Common.Requests;
+using MultiplayerLibrary.Reflection.Attributes;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -10,6 +11,8 @@ namespace Game.Match.Entity.Player
         #region PRIVATE_FIELDS
         private CharacterController characterController = null;
         private Vector2 movement = Vector2.zero;
+        [SyncField] private int uwu = 9;
+        int uwu2 = 9;
         #endregion
 
         #region ACTIONS
@@ -20,6 +23,27 @@ namespace Game.Match.Entity.Player
         #region UNITY_CALLS
         private void Update()
         {
+#if UNITY_EDITOR
+#else
+ if (Input.GetKeyDown(KeyCode.Space))
+            {
+            if (uwu == 9)
+            {
+                uwu = 1;
+            }
+            else
+            {
+                uwu = 9;
+            }
+            }
+#endif
+
+            if (uwu2 != uwu)
+            {
+                Debug.Log(uwu);
+                
+                uwu2 = uwu;
+            }
             if (!Application.isFocused)
             {
                 return;
@@ -34,18 +58,18 @@ namespace Game.Match.Entity.Player
 
             ResetData();
         }
-        #endregion
+#endregion
 
-        #region PUBLIC_METHODS
+#region PUBLIC_METHODS
         public void Init(CharacterController characterController, Func<double> onGetLatency, Action<GAME_MESSAGE_TYPE> onSendMessage)
         {
             this.characterController = characterController;
             this.onGetLatency = onGetLatency;
             this.onSendMessage = onSendMessage;
         }
-        #endregion
+#endregion
 
-        #region PRIVATE_METHODS
+#region PRIVATE_METHODS
         private void DetectInput()
         {
             movement = Vector2.zero;
@@ -81,6 +105,6 @@ namespace Game.Match.Entity.Player
             yield return new WaitForSeconds((float)onGetLatency.Invoke());
             action.Invoke();
         }
-        #endregion
+#endregion
     }
 }

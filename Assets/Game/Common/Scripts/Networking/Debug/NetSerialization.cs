@@ -82,7 +82,6 @@ namespace MultiplayerLibrary.Reflection
             }
             else
             {
-                Debug.Log("type not supported");
                 return null;
             }
         }
@@ -91,8 +90,6 @@ namespace MultiplayerLibrary.Reflection
         #region SERIALIZE_METHODS
         private static List<byte> Serialize(this int intValue, string fieldName)
         {
-            Debug.Log(intValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(intValue));
             bytes.AddRange(SerializeMessageTail(bytes.ToArray(), intValue));
@@ -101,8 +98,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this float floatValue, string fieldName)
         {
-            Debug.Log(floatValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(floatValue));
             bytes.AddRange(SerializeMessageTail(bytes.ToArray(), (int)(floatValue * 100f)));
@@ -111,8 +106,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this bool boolValue, string fieldName)
         {
-            Debug.Log(boolValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(boolValue));
             bytes.AddRange(SerializeMessageTail(bytes.ToArray(), boolValue ? 1 : 0));
@@ -121,8 +114,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this char charValue, string fieldName)
         {
-            Debug.Log(charValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(charValue));
             bytes.AddRange(SerializeMessageTail(bytes.ToArray(), charValue));
@@ -131,8 +122,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this string stringValue, string fieldName)
         {
-            Debug.Log(stringValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
 
             int operation = 0;
@@ -151,8 +140,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this Vector2 vector2Value, string fieldName)
         {
-            Debug.Log(vector2Value);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(vector2Value.x));
             bytes.AddRange(BitConverter.GetBytes(vector2Value.y));
@@ -165,8 +152,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this Vector3 vector3Value, string fieldName)
         {
-            Debug.Log(vector3Value);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(vector3Value.x));
             bytes.AddRange(BitConverter.GetBytes(vector3Value.y));
@@ -180,8 +165,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this Quaternion quaternionValue, string fieldName)
         {
-            Debug.Log(quaternionValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(quaternionValue.x));
             bytes.AddRange(BitConverter.GetBytes(quaternionValue.y));
@@ -196,8 +179,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this Color colorValue, string fieldName)
         {
-            Debug.Log(colorValue);
-
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(colorValue.r));
             bytes.AddRange(BitConverter.GetBytes(colorValue.g));
@@ -212,8 +193,6 @@ namespace MultiplayerLibrary.Reflection
         }
         private static List<byte> Serialize(this Transform transformValue, string fieldName)
         {
-            Debug.Log(transformValue);
-            
             List<byte> bytes = SerializeMessageHeader(fieldName);
             bytes.AddRange(BitConverter.GetBytes(transformValue.position.x));
             bytes.AddRange(BitConverter.GetBytes(transformValue.position.y));
@@ -231,37 +210,6 @@ namespace MultiplayerLibrary.Reflection
                             (int)(transformValue.localScale.x * 100) + (int)(transformValue.localScale.y * 100) + (int)(transformValue.localScale.z * 100);
             
             bytes.AddRange(SerializeMessageTail(bytes.ToArray(), operation));
-            return bytes;
-        }
-        private static List<byte> Serialize(this IDictionary dictionaryValue, string fieldName)
-        {
-            List<byte> bytes = SerializeMessageHeader(fieldName);
-
-            bytes.AddRange(BitConverter.GetBytes(dictionaryValue.Count));
-
-            foreach (DictionaryEntry kvp in dictionaryValue)
-            {
-                List<byte> serializedKey = Serialize(kvp.Key, fieldName);
-                bytes.AddRange(serializedKey);
-
-                List<byte> serializedValue = Serialize(kvp.Key, fieldName);
-                bytes.AddRange(serializedValue);
-            }
-
-            return bytes;
-        }
-        private static List<byte> Serialize(this ICollection collectionValue, string fieldName)
-        {
-            List<byte> bytes = SerializeMessageHeader(fieldName);
-
-            bytes.AddRange(BitConverter.GetBytes(collectionValue.Count));
-
-            foreach (var item in collectionValue)
-            {
-                List<byte> serializedKey = Serialize(item, fieldName);
-                bytes.AddRange(serializedKey);
-            }
-
             return bytes;
         }
         private static List<byte> Serialize(this byte[] byteArrayValue, string fieldName)

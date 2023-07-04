@@ -4,7 +4,6 @@ using MultiplayerLibrary.Reflection.Formater;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -115,7 +114,7 @@ namespace MultiplayerLibrary.Reflection
                     {
                         object newObj = field.GetValue(obj);
 
-                        OverWriteValue(data, newObj, fullPath, ref offset, path + field.Name, isObjectValue);
+                        OverWriteValue(data, newObj, fullPath, ref offset, path + field.Name, isObjectValue, field, obj);
                     }
                 }
             }
@@ -125,21 +124,21 @@ namespace MultiplayerLibrary.Reflection
                 OverWriteValue(data, obj, fullPath, ref offset, path, isObjectValue);
             }
 
-            if (typeof(ISync).IsAssignableFrom(type))
-            {
-                byte[] value = NetDeserialization.DeserializeBytes(path, data, ref offset, out bool success);
-
-                if (success)
-                { 
-                    (obj as ISync).Deserialize(value); 
-                }
-                return null;
-            }
+            //if (typeof(ISync).IsAssignableFrom(type))
+            //{
+            //    byte[] value = NetDeserialization.DeserializeBytes(path, data, ref offset, out bool success);
+            //
+            //    if (success)
+            //    { 
+            //        (obj as ISync).Deserialize(value); 
+            //    }
+            //    return null;
+            //}
 
             return null;
         }
 
-        private void OverWriteValue(byte[] data, object newObj, string fullPath, ref int offset, string path, bool isObjectValue)
+        private void OverWriteValue(byte[] data, object newObj, string fullPath, ref int offset, string path, bool isObjectValue, FieldInfo field = null, object obj = null)
         {
             if (typeof(IEnumerable).IsAssignableFrom(newObj.GetType()))
             {
@@ -248,7 +247,6 @@ namespace MultiplayerLibrary.Reflection
 
                             if (success)
                             {
-                                //OverrideCollectionValue(ref newObj, i, var);
                                 if (var is int)
                                 {
                                     OverrideCollectionValue(ref newObj, i, (int)var);
@@ -301,17 +299,16 @@ namespace MultiplayerLibrary.Reflection
             }
             else
             {
-                //if (field.Name == pathParts[0])
-                //{
-                //    object value = DeserializeVar(data, pathParts[0], newObj, ref offset, fullPath, out bool success);
-                //    if (success)
-                //    {
-                //        field.SetValue(obj, value);
-                //        return value;
-                //    }
-                //    //object value = GetVarData(data, pathParts[0], newObj, ref offset);
-                //    //field.SetValue(obj, value);
-                //}
+                object value = DeserializeVar(data, path, newObj, ref offset, fullPath, out bool success);
+
+                if (success)
+                {
+                    field.SetValue(obj, value);
+                }
+                else
+                {
+                    OverWrite(data, newObj, newObj.GetType(), fullPath, ref offset, path + "\\");
+                }
             }
         }
 
@@ -363,11 +360,6 @@ namespace MultiplayerLibrary.Reflection
             else if (obj is byte[])
             {
                 value = NetDeserialization.DeserializeBytes(name, data, ref offset, out success);
-            }
-            else
-            {
-                value =  OverWrite(data, obj, obj.GetType(), name, ref offset, fieldName + "\\");
-                success = true;
             }
 
             return success ? value : null;
@@ -468,60 +460,6 @@ namespace MultiplayerLibrary.Reflection
                 }
             }
         }
-
-        //private object GetVarData(byte[] data, string name, object obj, ref int offset, string fullPath)
-        //{
-        //    bool success = false;
-        //    object value = null;
-        //
-        //    if (obj is int)
-        //    {
-        //        value = NetDeserialization.DeserializeInt(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is float)
-        //    {
-        //        value = NetDeserialization.DeserializeFloat(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is bool)
-        //    {
-        //        value = NetDeserialization.DeserializeBool(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is char)
-        //    {
-        //        value = NetDeserialization.DeserializeChar(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is string)
-        //    {
-        //        value = NetDeserialization.DeserializeString(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is Vector2)
-        //    {
-        //        value = NetDeserialization.DeserializeVector2(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is Vector3)
-        //    {
-        //        value = NetDeserialization.DeserializeVector3(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is Quaternion)
-        //    {
-        //        value = NetDeserialization.DeserializeQuaternion(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is Color)
-        //    {
-        //        value = NetDeserialization.DeserializeColor(name, data, ref offset, out success);
-        //    }
-        //    else if (obj is byte[])
-        //    {
-        //        value = NetDeserialization.DeserializeBytes(name, data, ref offset, out success);
-        //    }
-        //    else
-        //    {
-        //        OverWrite(data, obj, obj.GetType(), name, ref offset, fullPath);
-        //    }
-        //
-        //    return success ? value : null;
-        //}
-
         #endregion
 
         #region READ_METHODS
@@ -548,12 +486,12 @@ namespace MultiplayerLibrary.Reflection
                 InspectValue(output, obj, fieldName);
             }
 
-            if (typeof(ISync).IsAssignableFrom(type))
-            {
-                ISync a = (obj as ISync);
-                byte[] bytes = a.Serialize();
-                ConvertToMessage(output, bytes, fieldName);
-            }
+            //if (typeof(ISync).IsAssignableFrom(type))
+            //{
+            //    ISync a = (obj as ISync);
+            //    byte[] bytes = a.Serialize();
+            //    ConvertToMessage(output, bytes, fieldName);
+            //}
 
             if (type.BaseType != null)
             {
@@ -595,11 +533,11 @@ namespace MultiplayerLibrary.Reflection
             }
             else
             {
-                ConvertToMessage(output, value, fieldName);
+                ConvertToMessage(output, value, fieldName, false);
             }
         }
 
-        private void ConvertToMessage(List<List<byte>> msgStack, object obj, string fieldName)
+        private void ConvertToMessage(List<List<byte>> msgStack, object obj, string fieldName, bool passAsFieldValue = true)
         {
             void SaveToSendIfChanged(object obj, List<byte> bytes)
             {
@@ -613,7 +551,7 @@ namespace MultiplayerLibrary.Reflection
             
             if (bytes == null)
             {
-                foreach (List<byte> msg in Inspect(obj, obj.GetType(), true, fieldName + "\\"))
+                foreach (List<byte> msg in Inspect(obj, obj.GetType(), passAsFieldValue, fieldName + "\\"))
                 {
                     msgStack.Add(msg);
                 }

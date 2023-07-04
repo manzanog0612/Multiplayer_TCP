@@ -23,7 +23,7 @@ namespace Game.Match
         [SerializeField] private GameObject playerPrefab = null;
         [SerializeField] private Transform playersHolder = null;
         [SerializeField] private Transform[] spawnPoints = null;
-        [SerializeField] private PlayerController playerController = null;
+        [SerializeField][SyncField] private PlayerController playerController = null;
         [SerializeField] private CameraController cameraController = null;
         [SerializeField] private ReflectionHandler reflectionHandler = null;
 
@@ -41,10 +41,10 @@ namespace Game.Match
         //Dictionary<string, char> val1 = new Dictionary<string, char>();
         //Dictionary<string, char> val2 = new Dictionary<string, char>();
         //[SyncField] private Dictionary<int, char> dic2 = new Dictionary<int, char>();
-        [SyncField] private List<char> list = new List<char>();
-        [SyncField] private Stack<int> stack = new Stack<int>();
-        [SyncField] private Queue<string> queue = new Queue<string>();
-        [SyncField] private char[] array;
+        //[SyncField] private List<char> list = new List<char>();
+        //[SyncField] private Stack<int> stack = new Stack<int>();
+        //[SyncField] private Queue<string> queue = new Queue<string>();
+        //[SyncField] private char[] array;
         #endregion
 
         #region OVERRIDE_METHODS
@@ -82,22 +82,19 @@ namespace Game.Match
             //dic.Add(2, val2);
             //dic2.Add(1, 'e');
             //dic2.Add(2, 'f');
-            list.Add('a');
-            list.Add('b');
-            list.Add('c');
-            stack.Push(1);
-            stack.Push(2);
-            stack.Push(3);
-            queue.Enqueue("AA");
-            queue.Enqueue("BB");
-            queue.Enqueue("CC");
-            array = new char[3];
-            array[0] = 'a';
-            array[1] = 'b';
-            array[2] = 'c';
-
-            Type type = array.GetType();
-            bool isArray = type.IsArray;
+            //list.Add('a');
+            //list.Add('b');
+            //list.Add('c');
+            //stack.Push(1);
+            //stack.Push(2);
+            //stack.Push(3);
+            //queue.Enqueue("AA");
+            //queue.Enqueue("BB");
+            //queue.Enqueue("CC");
+            //array = new char[3];
+            //array[0] = 'a';
+            //array[1] = 'b';
+            //array[2] = 'c';
             reflectionHandler.SetEntryPoint(this);
 
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
@@ -131,35 +128,36 @@ namespace Game.Match
                 //    dic2[1] = 'e';
                 //}
 
-                if (list[1] == 'b')
-                {
-                    list[1] = 'c';
-                }
-                else
-                {
-                    list[1] = 'b';
-                }
-
-                if (stack.Pop() == 3)
-                {
-                    stack.Push(4);
-                }
-                else
-                {
-                    stack.Push(3);
-                }
-
-                string val = queue.Dequeue();
-                queue.Enqueue(val);
-
-                if (array[0] == 'a')
-                {
-                    array[0] = 'c';
-                }
-                else
-                {
-                    array[0] = 'a';
-                }
+                //if (list[1] == 'b')
+                //{
+                //    list[1] = 'c';
+                //}
+                //else
+                //{
+                //    list[1] = 'b';
+                //}
+                //
+                //if (stack.Pop() == 3)
+                //{
+                //    stack.Push(4);
+                //}
+                //else
+                //{
+                //    stack.Push(3);
+                //}
+                //
+                //string val = queue.Dequeue();
+                //queue.Enqueue(val);
+                //
+                //if (array[0] == 'a')
+                //{
+                //    array[0] = 'c';
+                //}
+                //else
+                //{
+                //    array[0] = 'a';
+                //}
+                
             }
 #endif
 
