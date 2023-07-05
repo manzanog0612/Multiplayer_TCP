@@ -21,7 +21,6 @@ namespace MultiplayerLibrary.Reflection
         private string actualUsingKeyName = string.Empty;
         private string actualUsingValueName = string.Empty;
 
-
         #region UNITY_CALLS
         public void Start()
         {
@@ -175,7 +174,7 @@ namespace MultiplayerLibrary.Reflection
                                         }
                                     }
 
-                                    dicKeys.Enqueue(key);
+                                    dicKeys.Enqueue(key is Transform ? entry.Key : key);
                                 }
                             }
                             else
@@ -195,14 +194,16 @@ namespace MultiplayerLibrary.Reflection
                                 {
                                     string[] pathParts = path.Split("\\");
 
-                                    if (actualUsingValueName == pathParts[0])
-                                    { 
-                                        (newObj as IDictionary)[dicKeys.Dequeue()] = value; 
+                                    object key = actualUsingValueName == pathParts[0] ? dicKeys.Dequeue() : entry.Key;
+
+                                    if (entry.Value is Transform)
+                                    {
+                                        Transform t = (Transform)((newObj as IDictionary)[key]);
+                                        ConfigureForTransform(t, value as (Vector3, Quaternion, Vector3)?);
                                     }
                                     else
                                     {
-                                        dicKeys.Clear();
-                                        (newObj as IDictionary)[entry.Key] = value;
+                                        (newObj as IDictionary)[key] = value;
                                     }
                                 }
                             }
@@ -286,9 +287,9 @@ namespace MultiplayerLibrary.Reflection
                                     {
                                         OverrideCollectionValue(ref newObj, i, (Color)var, fullPath);
                                     }
-                                    else if (var is Transform)
+                                    else if (var is (Vector3, Quaternion, Vector3))
                                     {
-                                        OverrideCollectionValue(ref newObj, i, (Transform)var, fullPath);
+                                        OverrideCollectionValue<Transform>(ref newObj, i, null, fullPath, var);
                                     }
                                 }
                             }
@@ -305,22 +306,41 @@ namespace MultiplayerLibrary.Reflection
                         }
                     }
                 }
+                else if (newObj is Transform)
+                {
+                    OverWriteField(data, newObj, fullPath, ref offset, path, ref deserializedISync, field, obj);
+                }
             }
             else
             {
-                if (fullPath.Contains(path))
-                {
-                    object value = DeserializeVar(data, path, newObj, ref offset, fullPath, out bool success);
+                OverWriteField(data, newObj, fullPath, ref offset, path, ref deserializedISync, field, obj);
+            }
+        }
 
-                    if (success)
-                    {
-                        field.SetValue(obj, value);
-                    }
-                    else
-                    {
-                        OverWrite(data, newObj, newObj.GetType(), fullPath, ref offset, ref deserializedISync, path + "\\");
-                    }
+        private void OverWriteField(byte[] data, object newObj, string fullPath, ref int offset, string path, ref bool deserializedISync, FieldInfo field = null, object obj = null)
+        {
+            if (!fullPath.Contains(path))
+            {
+                return;
+            }
+
+            object value = DeserializeVar(data, path, newObj, ref offset, fullPath, out bool success);
+
+            if (success)
+            { 
+                if (newObj is Transform)
+                {
+                    ConfigureForTransform((Transform)newObj, value as (Vector3, Quaternion, Vector3)?);
+                    field.SetValue(obj, (Transform)newObj);
                 }
+                else
+                {
+                    field.SetValue(obj, value);
+                }
+            }
+            else
+            {
+                OverWrite(data, newObj, newObj.GetType(), fullPath, ref offset, ref deserializedISync, path + "\\");
             }
         }
 
@@ -376,13 +396,13 @@ namespace MultiplayerLibrary.Reflection
 
             if (success)
             {
-                SaveIfChanged(obj, fieldName);
+                SaveIfChanged(value, fieldName);
             }
 
             return success ? value : null;
         }
 
-        private void OverrideCollectionValue<T>(ref object newObj, int i, T collectionValue, string fieldName)
+        private void OverrideCollectionValue<T>(ref object newObj, int i, T collectionValue, string fieldName, object extraData = null)
         {
             ICollection collection = newObj as ICollection;
 
@@ -395,9 +415,22 @@ namespace MultiplayerLibrary.Reflection
             }
 
             bool isAddedValue = collection.Count <= i;
+            bool isTransform = collectionValue == null;
+
+            (Vector3 position, Quaternion rotation, Vector3 localScale)? res = null;
+            if (isTransform)
+            {
+                res = extraData as (Vector3, Quaternion, Vector3)?;
+            }
 
             if (type.IsArray)
             {
+                if (isTransform)
+                {
+                    collectionValue = (newObj as T[])[i];
+                    ConfigureForTransform(collectionValue as Transform, res);
+                }
+
                 (newObj as T[])[i] = collectionValue;
             }
             else if (typeGeneric == typeof(List<>))
@@ -408,6 +441,12 @@ namespace MultiplayerLibrary.Reflection
                 }
                 else
                 {
+                    if (isTransform)
+                    {
+                        collectionValue = (T)(newObj as IList)[i];
+                        ConfigureForTransform(collectionValue as Transform, res);
+                    }
+
                     (newObj as IList)[i] = collectionValue;
                 }
             }
@@ -429,8 +468,17 @@ namespace MultiplayerLibrary.Reflection
                     {
                         if (j == i)
                         {
+                            if (isTransform)
+                            {
+                                collectionValue = originalQueue.Dequeue();
+                                ConfigureForTransform(collectionValue as Transform, res);
+                            }
+                            else
+                            {
+                                originalQueue.Dequeue();
+                            }
+
                             tempQueue.Enqueue(collectionValue);
-                            originalQueue.Dequeue();
                         }
                         else
                         {
@@ -461,8 +509,17 @@ namespace MultiplayerLibrary.Reflection
                     {
                         if (j == i)
                         {
+                            if (isTransform)
+                            {
+                                collectionValue = originalStack.Pop();
+                                ConfigureForTransform(collectionValue as Transform, res);
+                            }
+                            else
+                            {
+                                originalStack.Pop();
+                            }
+
                             tempStack.Push(collectionValue);
-                            originalStack.Pop();
                         }
                         else
                         {
@@ -549,6 +606,10 @@ namespace MultiplayerLibrary.Reflection
                         i++;
                     }
                 }
+                else if (value is Transform)
+                {
+                    ConvertToMessage(output, value, fieldName, false);
+                }
             }
             else
             {
@@ -593,37 +654,54 @@ namespace MultiplayerLibrary.Reflection
                 }
             }
         }
-
-        //private List<byte> ConvertToMessage(object obj, string fieldName)
-        //{
-        //    List<byte> bytes = NetSerialization.Serialize(obj, fieldName);
-        //
-        //    if (bytes == null)
-        //    {
-        //        foreach (List<byte> msg in Inspect(obj, obj.GetType(), fieldName + "\\"))
-        //        {
-        //            bytes.AddRange(msg);
-        //        }
-        //    }
-        //
-        //    return bytes;
-        //}
         #endregion
 
         #region PRIVATE_METHODS
+        void ConfigureForTransform(Transform value, (Vector3 position, Quaternion rotation, Vector3 localScale)? res)
+        {
+            value.position = res.Value.position;
+            value.rotation = res.Value.rotation;
+            value.localScale = res.Value.localScale;
+        }
+
         private bool SaveIfChanged(object value, string fullPath)
         {
             if (savedVars.ContainsKey(fullPath))
             {
-                if (!Equals(savedVars[fullPath], value))
+                if (value is Transform)
                 {
-                    savedVars[fullPath] = value;
-                    return true;
+                    Transform t = (Transform)value;
+                    (Vector3, Quaternion, Vector3) transformValue = (t.position, t.rotation, t.localScale);
+
+                    if (!Equals(savedVars[fullPath], transformValue))
+                    {
+                        savedVars[fullPath] = transformValue;
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (!Equals(savedVars[fullPath], value))
+                    {
+                        savedVars[fullPath] = value;
+                        return true;
+                    }
                 }
             }
             else
             {
-                savedVars.Add(fullPath, value);
+                if (value is Transform)
+                {
+                    Transform t = (Transform)value;
+                    (Vector3, Quaternion, Vector3) transformValue = (t.position, t.rotation, t.localScale);
+
+                    savedVars.Add(fullPath, transformValue);
+                }
+                else
+                {
+                    savedVars.Add(fullPath, value);
+                }
+                    
                 return true;
             }
 

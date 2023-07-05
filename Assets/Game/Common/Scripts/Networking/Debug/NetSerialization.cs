@@ -8,7 +8,6 @@ namespace MultiplayerLibrary.Reflection
    
     public static class NetSerialization
     {
-        
         #region PUBLIC_FIELDS
         public static List<byte> Serialize(object obj, string fieldName)
         {

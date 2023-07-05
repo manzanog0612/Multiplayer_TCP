@@ -14,14 +14,14 @@ using Client = MultiplayerLibrary.Entity.Client;
 
 namespace Game.Match
 {
-    public class MatchController : SceneController, ISync
+    public class MatchController : SceneController//, ISync
     {
         #region EXPOSED_FIELDS
         [SerializeField] private MatchView matchView = null;
         [SerializeField] private GameObject playerPrefab = null;
         [SerializeField] private Transform playersHolder = null;
         [SerializeField] private Transform[] spawnPoints = null;
-        [SerializeField][SyncField] private PlayerController playerController = null;
+        [SerializeField] private PlayerController playerController = null;
         [SerializeField] private CameraController cameraController = null;
         [SerializeField] private ReflectionHandler reflectionHandler = null;
 
@@ -33,6 +33,13 @@ namespace Game.Match
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
         private bool matchEnded = false;
+        [SyncField] Dictionary<int, List<Dictionary<int, char>>> aaaaaaaaaaaaaaaaa =  new Dictionary<int, List<Dictionary<int, char>>>();
+
+        List<Dictionary<int, char>> a = new List<Dictionary<int, char>>();
+        List<Dictionary<int, char>> b = new List<Dictionary<int, char>>();
+
+        Dictionary<int, char> dicA = new Dictionary<int, char>();
+        Dictionary<int, char> dicB = new Dictionary<int, char>();
         #endregion
 
         #region OVERRIDE_METHODS
@@ -66,10 +73,104 @@ namespace Game.Match
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
             sessionHandler.onReceiveServerGameMessage = turretsController.OnReceiveTurretData;
             sessionHandler.onMatchFinished = FinishMatch;
+
+            dicB.Add(11, 'a');
+            dicB.Add(11, 'b');
+
+            dicB.Add(111, 'A');
+            dicB.Add(222, 'B');
+
+            a.Add(dicA);
+            a.Add(dicB);
+            b.Add(dicB);
+            b.Add(dicA);
+
+            aaaaaaaaaaaaaaaaa.Add(1, a);
+            aaaaaaaaaaaaaaaaa.Add(2, b);
         }
 
         private void Update()
         {
+#if UNITY_EDITOR
+//#else
+
+
+            //Vector3 movement = Vector3.zero;
+            //Vector3 rotEuler = Vector3.zero;
+            //Vector3 localScale = Vector3.zero;
+            //
+            //if (Input.GetKeyDown(KeyCode.Space))
+            //{
+            //    if (a < aaa.Count - 1)
+            //    { 
+            //        a++; 
+            //    }
+            //    else
+            //    {
+            //        a = 0;
+            //    }
+            //}
+            //
+            //if (Input.GetKey(KeyCode.Y))
+            //{
+            //    movement.y = Time.deltaTime * 4;
+            //}
+            //else if (Input.GetKey(KeyCode.H))
+            //{
+            //    movement.y = Time.deltaTime * -4;
+            //}
+            //
+            //if (Input.GetKey(KeyCode.G))
+            //{
+            //    movement.x = Time.deltaTime * -4;
+            //}
+            //else if (Input.GetKey(KeyCode.J))
+            //{
+            //    movement.x = Time.deltaTime * 4;
+            //}
+            //
+            //if (Input.GetKey(KeyCode.O))
+            //{
+            //    rotEuler.z = Time.deltaTime * 40;
+            //}
+            //else if (Input.GetKey(KeyCode.P))
+            //{
+            //    rotEuler.z = Time.deltaTime * -40;
+            //}
+            //
+            //if (Input.GetKey(KeyCode.L))
+            //{
+            //    rotEuler.x = Time.deltaTime * -40;
+            //}
+            //else if (Input.GetKey(KeyCode.K))
+            //{
+            //    rotEuler.x = Time.deltaTime * 40;
+            //}
+            //
+            //if (Input.GetKey(KeyCode.R))
+            //{
+            //    localScale.y = Time.deltaTime * 4;
+            //}
+            //else if (Input.GetKey(KeyCode.T))
+            //{
+            //    localScale.y = Time.deltaTime * -4;
+            //}
+            //
+            //if (Input.GetKey(KeyCode.Z))
+            //{
+            //    localScale.x = Time.deltaTime * -4;
+            //}
+            //else if (Input.GetKey(KeyCode.X))
+            //{
+            //    localScale.x = Time.deltaTime * 4;
+            //}
+            //
+            //aaaaaaaaaaaaaaaaa[a].position += movement;
+            //aaaaaaaaaaaaaaaaa[a].Rotate(rotEuler);
+            //aaaaaaaaaaaaaaaaa[a].localScale += localScale;
+#endif
+
+
             if (matchEnded)
             {
                 return;
@@ -117,9 +218,9 @@ namespace Game.Match
                 characterControllers[key].Deserialize(bytes.ToArray());
             }
         }
-        #endregion
+#endregion
 
-        #region PRIVATE_METHODS
+#region PRIVATE_METHODS
         private void SpawnPlayers()
         {
             int i = 0;
@@ -233,6 +334,6 @@ namespace Game.Match
                 FinishMatch();
             }
         }
-        #endregion
+#endregion
     }
 }
