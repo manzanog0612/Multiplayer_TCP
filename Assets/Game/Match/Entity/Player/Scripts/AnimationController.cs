@@ -69,6 +69,7 @@ namespace Game.Match.Entity.Player
             }
 
             spriteRenderer.color = normalColor;
+            yield return null;
         }
         #endregion
     }

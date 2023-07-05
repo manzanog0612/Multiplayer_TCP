@@ -166,6 +166,8 @@ namespace Game.Match.Entity.Player
 
             OnFinishHit();
             hitAction.canDoAction = true;
+
+            yield return null;
         }
         #endregion
     }

@@ -14,7 +14,7 @@ using Client = MultiplayerLibrary.Entity.Client;
 
 namespace Game.Match
 {
-    public class MatchController : SceneController//, ISync
+    public class MatchController : SceneController, ISync
     {
         #region EXPOSED_FIELDS
         [SerializeField] private MatchView matchView = null;
@@ -74,8 +74,8 @@ namespace Game.Match
             sessionHandler.onReceiveServerGameMessage = turretsController.OnReceiveTurretData;
             sessionHandler.onMatchFinished = FinishMatch;
 
-            dicB.Add(11, 'a');
-            dicB.Add(11, 'b');
+            dicA.Add(11, 'a');
+            dicA.Add(22, 'b');
 
             dicB.Add(111, 'A');
             dicB.Add(222, 'B');
@@ -92,9 +92,18 @@ namespace Game.Match
         private void Update()
         {
 #if UNITY_EDITOR
-//#else
-
-
+#else
+if (Input.GetKeyDown(KeyCode.Space))
+{
+            if (aaaaaaaaaaaaaaaaa[1] == a)
+            {
+                aaaaaaaaaaaaaaaaa[1] = b;
+            }
+            else
+            {
+                aaaaaaaaaaaaaaaaa[1] = a;
+            }
+            }
             //Vector3 movement = Vector3.zero;
             //Vector3 rotEuler = Vector3.zero;
             //Vector3 localScale = Vector3.zero;

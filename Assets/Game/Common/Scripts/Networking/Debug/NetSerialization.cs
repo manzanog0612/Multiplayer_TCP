@@ -51,30 +51,6 @@ namespace MultiplayerLibrary.Reflection
             {
                 return ((Transform)obj).Serialize(fieldName);
             }
-            //else if (obj is IEnumerator)
-            //{
-            //    if (obj is IDictionary)
-            //    { 
-            //        return ((IDictionary)obj).Serialize(fieldName); 
-            //    }
-            //    else
-            //    {
-            //        TYPE type = TYPE.ILIST;
-            //
-            //        Type objType = ((ICollection)obj).GetType().GetGenericTypeDefinition();
-            //
-            //        if (objType == typeof(Queue<>))
-            //        {
-            //            type = TYPE.QUEUE;
-            //        }
-            //        else if (objType == typeof(Stack<>))
-            //        {
-            //            type = TYPE.STACK;
-            //        }
-            //
-            //        return ((ICollection)obj).Serialize(type, fieldName);
-            //    }
-            //}
             else if (obj is byte[])
             {
                 return ((byte[])obj).Serialize(fieldName);

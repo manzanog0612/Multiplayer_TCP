@@ -124,9 +124,9 @@ namespace MultiplayerLibrary.Reflection
                 OverWriteValue(data, obj, fullPath, ref offset, path, isObjectValue, ref deserializedISync);
             }
 
-            if (!deserializedISync && typeof(ISync).IsAssignableFrom(type))
+            if (!deserializedISync && path + "ISyncData" == fullPath && typeof(ISync).IsAssignableFrom(type))
             {
-                byte[] value = NetDeserialization.DeserializeBytes(path, data, ref offset, out bool success);
+                byte[] value = NetDeserialization.DeserializeBytes(path + "ISyncData", data, ref offset, out bool success);
             
                 if (success)
                 { 
@@ -566,7 +566,7 @@ namespace MultiplayerLibrary.Reflection
             {
                 ISync a = (obj as ISync);
                 byte[] bytes = a.Serialize();
-                ConvertToMessage(output, bytes, fieldName);
+                ConvertToMessage(output, bytes, fieldName + "ISyncData");
             }
 
             if (type.BaseType != null)
