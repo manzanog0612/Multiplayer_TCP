@@ -83,9 +83,9 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region PROTECTED_METHODS
-        protected override void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Vector3 position, Color color)
+        protected override void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Color color)
         {
-            base.AddClient(ip, clientId, realtimeSinceStartup, position, color);
+            base.AddClient(ip, clientId, realtimeSinceStartup, color);
 
             if (ipToId.ContainsKey((ip, realtimeSinceStartup)))
             {
@@ -172,12 +172,12 @@ namespace MultiplayerLibrary.Entity
         
             Debug.Log("Client" + assignedId.ToString() + " is adding processing client list");
         
-            ((int id, long server, float timeSinceConection, Vector3 position, Color color)[] clientsList, int id) = ClientsListMessage.Deserialize(data);
+            ((int id, long server, float timeSinceConection, Color color)[] clientsList, int id) = ClientsListMessage.Deserialize(data);
         
             for (int i = 0; i < clientsList.Length; i++)
             {
                 IPEndPoint client = new IPEndPoint(clientsList[i].server, port);
-                AddClient(client, clientsList[i].id, clientsList[i].timeSinceConection, clientsList[i].position, clientsList[i].color);
+                AddClient(client, clientsList[i].id, clientsList[i].timeSinceConection, clientsList[i].color);
             }
         
             Debug.Log("Client" + assignedId.ToString() + " got his id = " + id.ToString() + " assigned for first time");
@@ -199,7 +199,7 @@ namespace MultiplayerLibrary.Entity
             Debug.Log("Server is processing Handshake");
 
             (long ip, int id, Color color) message = HandShakeMessage.Deserialize(data);
-            AddClient(clientConnectionData.ip, message.id, clientConnectionData.timeStamp, Vector3.zero, message.color);
+            AddClient(clientConnectionData.ip, message.id, clientConnectionData.timeStamp, message.color);
         }
         #endregion
 

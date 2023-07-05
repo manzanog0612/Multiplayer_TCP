@@ -150,7 +150,7 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region PROTECTED_METHODS   
-        protected override void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Vector3 position, Color color)
+        protected override void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Color color)
         {
             if (ipToId.ContainsKey((ip, realtimeSinceStartup)))
             {
@@ -162,9 +162,9 @@ namespace MultiplayerLibrary.Entity
 
             Debug.Log("Server" + " is adding client: " + id.ToString());
 
-            clients.Add(id, new Client(ip, id, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>(), position, color));
+            clients.Add(id, new Client(ip, id, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>(), color));
 
-            onAddNewClient?.Invoke(id, (ip.Address.Address, realtimeSinceStartup), position, color);
+            onAddNewClient?.Invoke(id, (ip.Address.Address, realtimeSinceStartup), color);
 
             roomData.PlayersIn++;
             SendDataUpdate();
@@ -329,7 +329,7 @@ namespace MultiplayerLibrary.Entity
 
             SendHandShakeForClients(message, clientConnectionData.timeStamp);
 
-            AddClient(clientConnectionData.ip, clientId, clientConnectionData.timeStamp, Vector3.zero, message.color);
+            AddClient(clientConnectionData.ip, clientId, clientConnectionData.timeStamp, message.color);
 
             SendClientListMessage(clientConnectionData.ip);
         }
@@ -381,16 +381,6 @@ namespace MultiplayerLibrary.Entity
 
         private void SendDataUpdate()
         {
-            //RoomDataUpdateMessage roomDataUpdateMessage = new RoomDataUpdateMessage(roomData);
-            //byte[] data = roomDataUpdateMessage.Serialize();
-            //
-            //RoomData roomDataa = Deserialize2(data, RoomDataUpdateMessage.GetHeaderSize());
-            //
-            //RoomDataUpdateMessage serverDataUpdateMessage = new RoomDataUpdateMessage(roomDataa);
-            //byte[] data2 = serverDataUpdateMessage.Serialize();
-            //
-            //HandleMessageError2(data, (int)MESSAGE_TYPE.SERVER_DATA_UPDATE, serverDataUpdateMessage, RoomDataUpdateMessage.GetMessageSize(), RoomDataUpdateMessage.GetHeaderSize());
-
             RoomDataUpdateMessage roomDataUpdateMessage = new RoomDataUpdateMessage(roomData);
             byte[] data = roomDataUpdateMessage.Serialize();
             
@@ -403,41 +393,6 @@ namespace MultiplayerLibrary.Entity
                 matchMakerConnection.Send(data);
             }
         }
-
-        #region DEBUG
-        public static RoomData Deserialize2(byte[] message, int headerSize)
-        {
-            return new RoomData(BitConverter.ToInt32(message, headerSize), 
-                BitConverter.ToInt32(message, headerSize + 4), 
-                BitConverter.ToInt32(message, headerSize + 8), 
-                BitConverter.ToInt32(message, headerSize + 12));
-        }
-
-        protected virtual void HandleMessageError2(byte[] data, int type, SemiTcpMessage semiTcpMessage, int messageSize, int headerSize)
-        {
-            wasLastMessageSane = CheckMessageSanity2(data, headerSize, messageSize, semiTcpMessage.GetMessageTail().messageOperationResult);
-            if (!wasLastMessageSane)
-            {
-                Debug.Log("The message " + type + " was insane");
-            }
-        }
-
-        protected bool CheckMessageSanity2(byte[] data, int headerSize, int messageSize, int op)
-        {
-            MessageTail messageTail = DeserializeTail2(data, headerSize, messageSize);
-            if (op == messageTail.messageOperationResult)
-            {
-                return data.Length == messageTail.messageSize;
-            }
-
-            return false;
-        }
-
-        public MessageTail DeserializeTail2(byte[] message, int headerSize, int messageSize)
-        {
-            return new MessageTail(BitConverter.ToInt32(message, headerSize + messageSize), BitConverter.ToInt32(message, headerSize + messageSize + 4));
-        }
-        #endregion
 
         private void SendIsOnMessage()
         {
@@ -506,13 +461,13 @@ namespace MultiplayerLibrary.Entity
             }
         }
 
-        private (int, long, float, Vector3, Color)[] GetClientsList()
+        private (int, long, float, Color)[] GetClientsList()
         {
-            List<(int, long, float, Vector3, Color)> clients = new List<(int, long, float, Vector3, Color)>();
+            List<(int, long, float, Color)> clients = new List<(int, long, float, Color)>();
 
             foreach (var client in this.clients)
             {
-                clients.Add((client.Value.id, client.Value.ipEndPoint.Address.Address, client.Value.timeStamp, client.Value.position, client.Value.color));
+                clients.Add((client.Value.id, client.Value.ipEndPoint.Address.Address, client.Value.timeStamp, client.Value.color));
             }
 
             return clients.ToArray();

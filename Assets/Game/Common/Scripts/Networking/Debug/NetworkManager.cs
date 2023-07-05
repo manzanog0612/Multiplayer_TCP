@@ -42,7 +42,7 @@ namespace MultiplayerLibrary.Entity
         public Action<byte[], IPEndPoint, int, MESSAGE_TYPE> onReceiveEvent = null;
         public Action onStartConnection = null;
         public Action<bool> onDefineIsServer = null;
-        public Action<int, (long, float), Vector3, Color> onAddNewClient = null;
+        public Action<int, (long, float), Color> onAddNewClient = null;
         public Action<int> onRemoveClient = null;
         public Action<int> onSync = null;
         public Action<byte[]> onReceiveReflectionData = null;
@@ -125,7 +125,7 @@ namespace MultiplayerLibrary.Entity
 
         #region PROTECTED_METHODS
 
-        protected virtual void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Vector3 position, Color color)
+        protected virtual void AddClient(IPEndPoint ip, int clientId, float realtimeSinceStartup, Color color)
         {
             if (ipToId.ContainsKey((ip, realtimeSinceStartup)))
             {
@@ -134,9 +134,9 @@ namespace MultiplayerLibrary.Entity
 
             ipToId[(ip, realtimeSinceStartup)] = clientId;
 
-            clients.Add(clientId, new Client(ip, clientId, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>(), position, color));
+            clients.Add(clientId, new Client(ip, clientId, realtimeSinceStartup, new Dictionary<MESSAGE_TYPE, int>(), color));
 
-            onAddNewClient?.Invoke(clientId, (ip.Address.Address, realtimeSinceStartup), position, color);
+            onAddNewClient?.Invoke(clientId, (ip.Address.Address, realtimeSinceStartup), color);
         }
 
         protected virtual void RemoveClient(int id)

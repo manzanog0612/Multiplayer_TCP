@@ -34,13 +34,6 @@ namespace Game.Match
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
         private bool matchEnded = false;
-        //[SyncField] Dictionary<int, List<Dictionary<int, char>>> aaaaaaaaaaaaaaaaa =  new Dictionary<int, List<Dictionary<int, char>>>();
-        //
-        //List<Dictionary<int, char>> a = new List<Dictionary<int, char>>();
-        //List<Dictionary<int, char>> b = new List<Dictionary<int, char>>();
-        //
-        //Dictionary<int, char> dicA = new Dictionary<int, char>();
-        //Dictionary<int, char> dicB = new Dictionary<int, char>();
         #endregion
 
         #region OVERRIDE_METHODS
@@ -74,113 +67,10 @@ namespace Game.Match
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
             sessionHandler.onReceiveMessage = OnReceiveMessage;
             sessionHandler.onMatchFinished = FinishMatch;
-
-            //dicA.Add(11, 'a');
-            //dicA.Add(22, 'b');
-            //
-            //dicB.Add(111, 'A');
-            //dicB.Add(222, 'B');
-            //
-            //a.Add(dicA);
-            //a.Add(dicB);
-            //b.Add(dicB);
-            //b.Add(dicA);
-            //
-            //aaaaaaaaaaaaaaaaa.Add(1, a);
-            //aaaaaaaaaaaaaaaaa.Add(2, b);
         }
 
         private void Update()
         {
-#if UNITY_EDITOR
-#else
-//if (Input.GetKeyDown(KeyCode.Space))
-//{
-//            if (aaaaaaaaaaaaaaaaa[1] == a)
-//            {
-//                aaaaaaaaaaaaaaaaa[1] = b;
-//            }
-//            else
-//            {
-//                aaaaaaaaaaaaaaaaa[1] = a;
-//            }
-//            }
-            //Vector3 movement = Vector3.zero;
-            //Vector3 rotEuler = Vector3.zero;
-            //Vector3 localScale = Vector3.zero;
-            //
-            //if (Input.GetKeyDown(KeyCode.Space))
-            //{
-            //    if (a < aaa.Count - 1)
-            //    { 
-            //        a++; 
-            //    }
-            //    else
-            //    {
-            //        a = 0;
-            //    }
-            //}
-            //
-            //if (Input.GetKey(KeyCode.Y))
-            //{
-            //    movement.y = Time.deltaTime * 4;
-            //}
-            //else if (Input.GetKey(KeyCode.H))
-            //{
-            //    movement.y = Time.deltaTime * -4;
-            //}
-            //
-            //if (Input.GetKey(KeyCode.G))
-            //{
-            //    movement.x = Time.deltaTime * -4;
-            //}
-            //else if (Input.GetKey(KeyCode.J))
-            //{
-            //    movement.x = Time.deltaTime * 4;
-            //}
-            //
-            //if (Input.GetKey(KeyCode.O))
-            //{
-            //    rotEuler.z = Time.deltaTime * 40;
-            //}
-            //else if (Input.GetKey(KeyCode.P))
-            //{
-            //    rotEuler.z = Time.deltaTime * -40;
-            //}
-            //
-            //if (Input.GetKey(KeyCode.L))
-            //{
-            //    rotEuler.x = Time.deltaTime * -40;
-            //}
-            //else if (Input.GetKey(KeyCode.K))
-            //{
-            //    rotEuler.x = Time.deltaTime * 40;
-            //}
-            //
-            //if (Input.GetKey(KeyCode.R))
-            //{
-            //    localScale.y = Time.deltaTime * 4;
-            //}
-            //else if (Input.GetKey(KeyCode.T))
-            //{
-            //    localScale.y = Time.deltaTime * -4;
-            //}
-            //
-            //if (Input.GetKey(KeyCode.Z))
-            //{
-            //    localScale.x = Time.deltaTime * -4;
-            //}
-            //else if (Input.GetKey(KeyCode.X))
-            //{
-            //    localScale.x = Time.deltaTime * 4;
-            //}
-            //
-            //aaaaaaaaaaaaaaaaa[a].position += movement;
-            //aaaaaaaaaaaaaaaaa[a].Rotate(rotEuler);
-            //aaaaaaaaaaaaaaaaa[a].localScale += localScale;
-#endif
-
-
             if (matchEnded)
             {
                 return;

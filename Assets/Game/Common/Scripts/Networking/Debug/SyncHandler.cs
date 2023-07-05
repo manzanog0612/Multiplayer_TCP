@@ -35,7 +35,7 @@ namespace MultiplayerLibrary.Entity
         #endregion
 
         #region CONSTANTS
-        private const int kickTime = 9999999;//15
+        private const int kickTime = 30;
         private const int syncTime = 2;
         #endregion
 
@@ -121,7 +121,7 @@ namespace MultiplayerLibrary.Entity
             canCheck = true;
         }
 
-        private void OnAddNewClient(int id, (long, float) connectionData, Vector3 position, Color color)
+        private void OnAddNewClient(int id, (long, float) connectionData, Color color)
         {
             if (isServer)
             {
