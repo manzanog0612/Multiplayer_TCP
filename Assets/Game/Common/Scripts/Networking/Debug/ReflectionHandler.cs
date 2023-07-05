@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
 
 namespace MultiplayerLibrary.Reflection
 {
@@ -21,6 +20,7 @@ namespace MultiplayerLibrary.Reflection
         private Queue<object> dicKeys = new Queue<object>();
         private string actualUsingKeyName = string.Empty;
         private string actualUsingValueName = string.Empty;
+
 
         #region UNITY_CALLS
         public void Start()
@@ -88,21 +88,22 @@ namespace MultiplayerLibrary.Reflection
 
                 string name = string.Empty;
 
-                for (int j = 0; j < sizeOfName * sizeof(char); j += sizeof(char))
+                for (int j = 0; j < sizeOfName; j++)
                 {
                     char c = BitConverter.ToChar(data, offset);
                     name += c;
                     offset += sizeof(char);
                 }
 
-                //Debug.Log(name);
-
                 Type type = entryPoint.GetType();
-                OverWrite(data, entryPoint, type, name, ref offset);
+                bool deserializedISync = false;
+                OverWrite(data, entryPoint, type, name, ref offset, ref deserializedISync);
             }
+
+            dicKeys.Clear();
         }
 
-        private object OverWrite(byte[] data, object obj, Type type, string fullPath, ref int offset, string path = "", bool isObjectValue = false)
+        private void OverWrite(byte[] data, object obj, Type type, string fullPath, ref int offset, ref bool deserializedISync, string path = "", bool isObjectValue = false)
         {
             foreach (FieldInfo field in type.GetFields(InstanceDeclaredOnlyFilter))
             {
@@ -114,31 +115,30 @@ namespace MultiplayerLibrary.Reflection
                     {
                         object newObj = field.GetValue(obj);
 
-                        OverWriteValue(data, newObj, fullPath, ref offset, path + field.Name, isObjectValue, field, obj);
+                        OverWriteValue(data, newObj, fullPath, ref offset, path + field.Name, isObjectValue, ref deserializedISync, field, obj);
                     }
                 }
             }
 
             if (isObjectValue)
             {
-                OverWriteValue(data, obj, fullPath, ref offset, path, isObjectValue);
+                OverWriteValue(data, obj, fullPath, ref offset, path, isObjectValue, ref deserializedISync);
             }
 
-            //if (typeof(ISync).IsAssignableFrom(type))
-            //{
-            //    byte[] value = NetDeserialization.DeserializeBytes(path, data, ref offset, out bool success);
-            //
-            //    if (success)
-            //    { 
-            //        (obj as ISync).Deserialize(value); 
-            //    }
-            //    return null;
-            //}
+            if (!deserializedISync && typeof(ISync).IsAssignableFrom(type))
+            {
+                byte[] value = NetDeserialization.DeserializeBytes(path, data, ref offset, out bool success);
+            
+                if (success)
+                { 
+                    (obj as ISync).Deserialize(value);                    
+                }
 
-            return null;
+                deserializedISync = true;
+            }
         }
 
-        private void OverWriteValue(byte[] data, object newObj, string fullPath, ref int offset, string path, bool isObjectValue, FieldInfo field = null, object obj = null)
+        private void OverWriteValue(byte[] data, object newObj, string fullPath, ref int offset, string path, bool isObjectValue, ref bool deserializedISync, FieldInfo field = null, object obj = null)
         {
             if (typeof(IEnumerable).IsAssignableFrom(newObj.GetType()))
             {
@@ -180,7 +180,7 @@ namespace MultiplayerLibrary.Reflection
                             }
                             else
                             {
-                                OverWrite(data, (newObj as IDictionary)[entry.Key], (newObj as IDictionary)[entry.Key].GetType(), fullPath, ref offset, path + addedKeyPath + "\\", true);                                
+                                OverWrite(data, (newObj as IDictionary)[entry.Key], (newObj as IDictionary)[entry.Key].GetType(), fullPath, ref offset, ref deserializedISync, path + addedKeyPath + "\\", true);                                
                             }
 
                             return;
@@ -210,8 +210,9 @@ namespace MultiplayerLibrary.Reflection
                             {
                                 object key;
 
-                                if (dicKeys.Count == 0)
+                                if (dicKeys.Count == 0 || actualUsingValueName != path + addedValuePath)
                                 {
+                                    dicKeys.Clear();
                                     key = entry.Key;
                                     actualUsingKeyName = path + addedKeyPath;
                                     actualUsingValueName = path + addedValuePath;
@@ -223,7 +224,7 @@ namespace MultiplayerLibrary.Reflection
 
                                 dicKeys.Enqueue(key);
 
-                                OverWrite(data, (newObj as IDictionary)[key], (newObj as IDictionary)[key].GetType(), fullPath, ref offset, path + addedValuePath + "\\", true);
+                                OverWrite(data, (newObj as IDictionary)[key], (newObj as IDictionary)[key].GetType(), fullPath, ref offset, ref deserializedISync, path + addedValuePath + "\\", true);
                             }
 
                             return;
@@ -241,53 +242,61 @@ namespace MultiplayerLibrary.Reflection
                     {
                         string indexPath = "[" + i.ToString() + "]";
                     
-                        if (path + indexPath == fullPath)
+                        if (fullPath.Contains(path + indexPath))
                         {
-                            object var = DeserializeVar(data, path + indexPath, element, ref offset, fullPath, out bool success);
-
-                            if (success)
+                            if (path + indexPath == fullPath)
                             {
-                                if (var is int)
+                                object var = DeserializeVar(data, path + indexPath, element, ref offset, fullPath, out bool success);
+
+                                if (success)
                                 {
-                                    OverrideCollectionValue(ref newObj, i, (int)var);
-                                }
-                                else if (var is float)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (float)var);
-                                }
-                                else if (var is bool)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (bool)var);
-                                }
-                                else if (var is char)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (char)var);
-                                }
-                                else if (var is string)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (string)var);
-                                }
-                                else if (var is Vector2)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (Vector2)var);
-                                }
-                                else if (var is Vector3)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (Vector3)var);
-                                }
-                                else if (var is Quaternion)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (Quaternion)var);
-                                }
-                                else if (var is Color)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (Color)var);
-                                }
-                                else if (var is Transform)
-                                {
-                                    OverrideCollectionValue(ref newObj, i, (Transform)var);
+                                    if (var is int)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (int)var, fullPath);
+                                    }
+                                    else if (var is float)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (float)var, fullPath);
+                                    }
+                                    else if (var is bool)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (bool)var, fullPath);
+                                    }
+                                    else if (var is char)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (char)var, fullPath);
+                                    }
+                                    else if (var is string)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (string)var, fullPath);
+                                    }
+                                    else if (var is Vector2)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (Vector2)var, fullPath);
+                                    }
+                                    else if (var is Vector3)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (Vector3)var, fullPath);
+                                    }
+                                    else if (var is Quaternion)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (Quaternion)var, fullPath);
+                                    }
+                                    else if (var is Color)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (Color)var, fullPath);
+                                    }
+                                    else if (var is Transform)
+                                    {
+                                        OverrideCollectionValue(ref newObj, i, (Transform)var, fullPath);
+                                    }
                                 }
                             }
+                            else
+                            {
+                                OverWrite(data, element, element.GetType(), fullPath, ref offset, ref deserializedISync, path + indexPath + "\\", true);
+                            }
+
                             break;
                         }
                         else
@@ -299,15 +308,18 @@ namespace MultiplayerLibrary.Reflection
             }
             else
             {
-                object value = DeserializeVar(data, path, newObj, ref offset, fullPath, out bool success);
+                if (fullPath.Contains(path))
+                {
+                    object value = DeserializeVar(data, path, newObj, ref offset, fullPath, out bool success);
 
-                if (success)
-                {
-                    field.SetValue(obj, value);
-                }
-                else
-                {
-                    OverWrite(data, newObj, newObj.GetType(), fullPath, ref offset, path + "\\");
+                    if (success)
+                    {
+                        field.SetValue(obj, value);
+                    }
+                    else
+                    {
+                        OverWrite(data, newObj, newObj.GetType(), fullPath, ref offset, ref deserializedISync, path + "\\");
+                    }
                 }
             }
         }
@@ -362,10 +374,15 @@ namespace MultiplayerLibrary.Reflection
                 value = NetDeserialization.DeserializeBytes(name, data, ref offset, out success);
             }
 
+            if (success)
+            {
+                SaveIfChanged(obj, fieldName);
+            }
+
             return success ? value : null;
         }
 
-        private void OverrideCollectionValue<T>(ref object newObj, int i, T collectionValue)
+        private void OverrideCollectionValue<T>(ref object newObj, int i, T collectionValue, string fieldName)
         {
             ICollection collection = newObj as ICollection;
 
@@ -459,6 +476,8 @@ namespace MultiplayerLibrary.Reflection
                     }
                 }
             }
+
+            SaveIfChanged(collectionValue, fieldName);
         }
         #endregion
 
@@ -486,12 +505,12 @@ namespace MultiplayerLibrary.Reflection
                 InspectValue(output, obj, fieldName);
             }
 
-            //if (typeof(ISync).IsAssignableFrom(type))
-            //{
-            //    ISync a = (obj as ISync);
-            //    byte[] bytes = a.Serialize();
-            //    ConvertToMessage(output, bytes, fieldName);
-            //}
+            if (typeof(ISync).IsAssignableFrom(type))
+            {
+                ISync a = (obj as ISync);
+                byte[] bytes = a.Serialize();
+                ConvertToMessage(output, bytes, fieldName);
+            }
 
             if (type.BaseType != null)
             {

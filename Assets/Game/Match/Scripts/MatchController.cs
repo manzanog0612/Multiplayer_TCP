@@ -5,9 +5,7 @@ using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
 using MultiplayerLibrary.Reflection;
 using MultiplayerLibrary.Reflection.Attributes;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,22 +27,12 @@ namespace Game.Match
 
         [Header("Controllers")]
         [SerializeField] private TurretsController turretsController = null;
-
-        //[SerializeField] private CharacterController characterController = null;
         #endregion
 
         #region PRIVATE_FIELDS
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
         private bool matchEnded = false;
-        //[SyncField]private Dictionary<int, Dictionary<string, char>> dic = new Dictionary<int, Dictionary<string, char>>();
-        //Dictionary<string, char> val1 = new Dictionary<string, char>();
-        //Dictionary<string, char> val2 = new Dictionary<string, char>();
-        //[SyncField] private Dictionary<int, char> dic2 = new Dictionary<int, char>();
-        //[SyncField] private List<char> list = new List<char>();
-        //[SyncField] private Stack<int> stack = new Stack<int>();
-        //[SyncField] private Queue<string> queue = new Queue<string>();
-        //[SyncField] private char[] array;
         #endregion
 
         #region OVERRIDE_METHODS
@@ -68,35 +56,11 @@ namespace Game.Match
                 onSendMessage: (messageType) =>
                 {
                     clientHandler.SendGameMessage(controlledPlayer, messageType);
-                });//null, null);
+                });
 
             cameraController.Init(characterControllers[controlledPlayer].transform);
 
-            //characterController.Init(Color.red, spawnPoints[0].position, false);//
-
-            //val1.Add("a", 'A');
-            //val1.Add("aa", 'B');
-            //val2.Add("b", 'C');
-            //val2.Add("bb", 'D');
-            //dic.Add(1, val1);
-            //dic.Add(2, val2);
-            //dic2.Add(1, 'e');
-            //dic2.Add(2, 'f');
-            //list.Add('a');
-            //list.Add('b');
-            //list.Add('c');
-            //stack.Push(1);
-            //stack.Push(2);
-            //stack.Push(3);
-            //queue.Enqueue("AA");
-            //queue.Enqueue("BB");
-            //queue.Enqueue("CC");
-            //array = new char[3];
-            //array[0] = 'a';
-            //array[1] = 'b';
-            //array[2] = 'c';
             reflectionHandler.SetEntryPoint(this);
-
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
             sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
@@ -106,61 +70,6 @@ namespace Game.Match
 
         private void Update()
         {
-#if UNITY_EDITOR
-#else
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                //if (Equals(dic[1], val1))
-                //{
-                //    dic[1] = val2;
-                //}
-                //else
-                //{
-                //    dic[1] = val1;
-                //}
-                //
-                //if (Equals(dic2[1], 'e'))
-                //{
-                //    dic2[1] = 'f';
-                //}
-                //else
-                //{
-                //    dic2[1] = 'e';
-                //}
-
-                //if (list[1] == 'b')
-                //{
-                //    list[1] = 'c';
-                //}
-                //else
-                //{
-                //    list[1] = 'b';
-                //}
-                //
-                //if (stack.Pop() == 3)
-                //{
-                //    stack.Push(4);
-                //}
-                //else
-                //{
-                //    stack.Push(3);
-                //}
-                //
-                //string val = queue.Dequeue();
-                //queue.Enqueue(val);
-                //
-                //if (array[0] == 'a')
-                //{
-                //    array[0] = 'c';
-                //}
-                //else
-                //{
-                //    array[0] = 'a';
-                //}
-                
-            }
-#endif
-
             if (matchEnded)
             {
                 return;
