@@ -96,11 +96,16 @@ namespace Game.Common.Networking
             clientGameNetworkManager.SendBulletBornMessage(id, pos, dir);
         }
 
+        public void SendChat(string chat)
+        {
+            clientGameNetworkManager.SendChat(chat);
+        }
+
         public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, 
             Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished,
-            Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage)
+            Action<int, object> onReceiveMessage)
         {
-            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage, onTimerUpdate, onMatchFinished, onReceiveServerGameMessage);
+            clientGameNetworkManager.SetAcions(onGetRoomData, onFullRoom, onPlayersAmountChange, onReceiveGameMessage, onTimerUpdate, onMatchFinished, onReceiveMessage);
         }
         #endregion
     }

@@ -3,6 +3,7 @@ using Game.Common.Requests;
 using Game.Match.Controllers;
 using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
+using MultiplayerLibrary.Interfaces;
 using MultiplayerLibrary.Reflection;
 using MultiplayerLibrary.Reflection.Attributes;
 using System;
@@ -33,13 +34,13 @@ namespace Game.Match
         private int controlledPlayer = -1;
         private Dictionary<int, CharacterController> characterControllers = new Dictionary<int, CharacterController>();
         private bool matchEnded = false;
-        [SyncField] Dictionary<int, List<Dictionary<int, char>>> aaaaaaaaaaaaaaaaa =  new Dictionary<int, List<Dictionary<int, char>>>();
-
-        List<Dictionary<int, char>> a = new List<Dictionary<int, char>>();
-        List<Dictionary<int, char>> b = new List<Dictionary<int, char>>();
-
-        Dictionary<int, char> dicA = new Dictionary<int, char>();
-        Dictionary<int, char> dicB = new Dictionary<int, char>();
+        //[SyncField] Dictionary<int, List<Dictionary<int, char>>> aaaaaaaaaaaaaaaaa =  new Dictionary<int, List<Dictionary<int, char>>>();
+        //
+        //List<Dictionary<int, char>> a = new List<Dictionary<int, char>>();
+        //List<Dictionary<int, char>> b = new List<Dictionary<int, char>>();
+        //
+        //Dictionary<int, char> dicA = new Dictionary<int, char>();
+        //Dictionary<int, char> dicB = new Dictionary<int, char>();
         #endregion
 
         #region OVERRIDE_METHODS
@@ -47,7 +48,7 @@ namespace Game.Match
         {
             base.Init();
 
-            matchView.Init(sessionHandler.RoomData.MatchTime, OnGoBack);
+            matchView.Init(sessionHandler.RoomData.MatchTime, OnGoBack, clientHandler.SendChat);
 
             controlledPlayer = clientHandler.ClientId;
 
@@ -71,39 +72,39 @@ namespace Game.Match
             sessionHandler.SetOnReceiveGameMessage(OnReceiveGameMessage);
             sessionHandler.SetOnPlayersAmountChange(OnClientDisconnected);
             sessionHandler.SetOnUpdateTimer(matchView.UpdateTimer);
-            sessionHandler.onReceiveServerGameMessage = turretsController.OnReceiveTurretData;
+            sessionHandler.onReceiveMessage = OnReceiveMessage;
             sessionHandler.onMatchFinished = FinishMatch;
 
-            dicA.Add(11, 'a');
-            dicA.Add(22, 'b');
-
-            dicB.Add(111, 'A');
-            dicB.Add(222, 'B');
-
-            a.Add(dicA);
-            a.Add(dicB);
-            b.Add(dicB);
-            b.Add(dicA);
-
-            aaaaaaaaaaaaaaaaa.Add(1, a);
-            aaaaaaaaaaaaaaaaa.Add(2, b);
+            //dicA.Add(11, 'a');
+            //dicA.Add(22, 'b');
+            //
+            //dicB.Add(111, 'A');
+            //dicB.Add(222, 'B');
+            //
+            //a.Add(dicA);
+            //a.Add(dicB);
+            //b.Add(dicB);
+            //b.Add(dicA);
+            //
+            //aaaaaaaaaaaaaaaaa.Add(1, a);
+            //aaaaaaaaaaaaaaaaa.Add(2, b);
         }
 
         private void Update()
         {
 #if UNITY_EDITOR
 #else
-if (Input.GetKeyDown(KeyCode.Space))
-{
-            if (aaaaaaaaaaaaaaaaa[1] == a)
-            {
-                aaaaaaaaaaaaaaaaa[1] = b;
-            }
-            else
-            {
-                aaaaaaaaaaaaaaaaa[1] = a;
-            }
-            }
+//if (Input.GetKeyDown(KeyCode.Space))
+//{
+//            if (aaaaaaaaaaaaaaaaa[1] == a)
+//            {
+//                aaaaaaaaaaaaaaaaa[1] = b;
+//            }
+//            else
+//            {
+//                aaaaaaaaaaaaaaaaa[1] = a;
+//            }
+//            }
             //Vector3 movement = Vector3.zero;
             //Vector3 rotEuler = Vector3.zero;
             //Vector3 localScale = Vector3.zero;
@@ -230,6 +231,18 @@ if (Input.GetKeyDown(KeyCode.Space))
 #endregion
 
 #region PRIVATE_METHODS
+        private void OnReceiveMessage(int messageType, object data)
+        {
+            if (messageType == (int)MESSAGE_TYPE.STRING)
+            {
+                matchView.AddTextToChatScreen((string)data);
+            }
+            else
+            {
+                turretsController.OnReceiveTurretData(messageType, data);
+            }
+        }
+
         private void SpawnPlayers()
         {
             int i = 0;

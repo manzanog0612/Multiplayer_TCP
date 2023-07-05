@@ -201,63 +201,22 @@ namespace MultiplayerLibrary.Entity
                 UdpBroadcast(data);
             }
         }
-
-        protected override void OnReceiveGameEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
-        {
-            if (!ipToId.ContainsKey(clientConnectionData))
-            {
-                return;
-            }
-
-            base.OnReceiveGameEvent(clientConnectionData, data, messageType);
-
-            SendData(data);
-
-            if (messageType == MESSAGE_TYPE.STRING)
-            {
-                SaveSentMessage((int)MESSAGE_TYPE.STRING, data, GetBiggerLatency() * latencyMultiplier);
-            }
-        }
         #endregion
 
         #region DATA_RECEIVE_PROCESS
-        #region DEBUG
-        protected override void ProcessNoticeMessage(IPEndPoint ip, byte[] data)
+        protected override void ProcessChatMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
         {
-            base.ProcessNoticeMessage(ip, data);
+            base.ProcessChatMessage(clientConnectionData, data);
 
             if (!wasLastMessageSane)
             {
-                SendResendDataMessage((int)MESSAGE_TYPE.NOTICE, ip);
+                SendResendDataMessage((int)MESSAGE_TYPE.STRING, clientConnectionData.ip);
                 return;
             }
 
-            NOTICE notice = (NOTICE)NoticeMessage.Deserialize(data);
-
-            switch (notice)
-            {
-                case NOTICE.ROOM_REQUEST:
-                    SendRoomDatas(ip);
-                    break;
-                case NOTICE.FULL_ROOM:
-                    break;
-                default:
-                    break;
-            }
+            SendData(data);
+            SaveSentMessage((int)MESSAGE_TYPE.STRING, data, GetBiggerLatency() * latencyMultiplier);
         }
-
-        protected void SendRoomDatas(IPEndPoint ip)
-        {
-            List<RoomData> romDatas = new List<RoomData> { roomData};
-
-            RoomsDataMessage roomsDataMessage = new RoomsDataMessage(romDatas.ToArray());
-            byte[] data = roomsDataMessage.Serialize();
-
-            SaveSentMessage((int)MESSAGE_TYPE.NOTICE, data, GetBiggerLatency() * latencyMultiplier);
-
-            SendToSpecificClient(data, ip);
-        }
-        #endregion
 
         protected override void ProcessGameMessage(IPEndPoint ip, byte[] data)
         {

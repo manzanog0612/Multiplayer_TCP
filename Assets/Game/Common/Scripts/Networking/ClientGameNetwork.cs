@@ -24,7 +24,7 @@ namespace Game.Common.Networking
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         private Action<float> onTimerUpdate = null;
         private Action onMatchFinished = null;
-        private Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage = null;
+        private Action<int, object> onReceiveMessage = null;
         #endregion
 
         #region PROPERTIES
@@ -78,7 +78,7 @@ namespace Game.Common.Networking
         #region PUBLIC_METHODS
         public void SetAcions(Action<RoomData> onGetRoomData, Action onFullRoom, Action<int> onPlayersAmountChange, 
             Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage, Action<float> onTimerUpdate, Action onMatchFinished, 
-            Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage)
+            Action<int, object> onReceiveMessage)
         {
             this.onGetRoomData = onGetRoomData;
             this.onFullRoom = onFullRoom;
@@ -86,11 +86,25 @@ namespace Game.Common.Networking
             this.onReceiveGameMessage = onReceiveGameMessage;
             this.onTimerUpdate = onTimerUpdate;
             this.onMatchFinished = onMatchFinished;
-            this.onReceiveServerGameMessage = onReceiveServerGameMessage;
+            this.onReceiveMessage = onReceiveMessage;
         }
         #endregion
 
         #region DATA_RECEIVE_PROCESS
+        protected override void ProcessChatMessage((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data)
+        {
+            base.ProcessChatMessage(clientConnectionData, data);
+
+            if (!wasLastMessageSane)
+            {
+                return;
+            }
+
+            string chat = StringMessage.Deserialize(data);
+
+            onReceiveMessage?.Invoke((int)MESSAGE_TYPE.STRING, chat);        
+        }
+
         private void ProcessBulletPosition(byte[] data)
         {
             CheckIfMessageIdIsCorrect(data, (int)GAME_MESSAGE_TYPE.BULLET_POSITION);
@@ -102,7 +116,7 @@ namespace Game.Common.Networking
 
             (int bulletId, Vector2 position) result = BulletPositionMessage.Deserialize(data);
 
-            onReceiveServerGameMessage?.Invoke(GAME_MESSAGE_TYPE.BULLET_POSITION, result);
+            onReceiveMessage?.Invoke((int)GAME_MESSAGE_TYPE.BULLET_POSITION, result);
         }
 
         private void ProcessTurretRotation(byte[] data)
@@ -116,7 +130,7 @@ namespace Game.Common.Networking
 
             (int turretId, Quaternion rotation) result = TurretRotationMessage.Deserialize(data);
 
-            onReceiveServerGameMessage?.Invoke(GAME_MESSAGE_TYPE.TURRET_ROTATION, result);
+            onReceiveMessage?.Invoke((int)GAME_MESSAGE_TYPE.TURRET_ROTATION, result);
         }
 
         private void ProcessTurretShot(IPEndPoint ip, byte[] data)
@@ -132,7 +146,7 @@ namespace Game.Common.Networking
 
             (int turretId, int bulletId) result = TurretShootMessage.Deserialize(data);
 
-            onReceiveServerGameMessage?.Invoke(GAME_MESSAGE_TYPE.TURRET_SHOOT, result);
+            onReceiveMessage?.Invoke((int)GAME_MESSAGE_TYPE.TURRET_SHOOT, result);
         }
 
         private void ProcessTimer(byte[] data)
@@ -261,6 +275,14 @@ namespace Game.Common.Networking
         #endregion
 
         #region SEND_DATA_METHODS
+        public void SendChat(string chat)
+        {
+            StringMessage stringMessage = new StringMessage(chat);
+            byte[] data = stringMessage.Serialize(admissionTimeStamp);
+
+            SaveAndSendData((int)MESSAGE_TYPE.STRING, data);
+        }
+
         public void SendBulletBornMessage(int id, Vector2 pos, Vector2 dir)
         {
             BulletBornMessage bulletBornMessage = new BulletBornMessage((id, pos, dir));

@@ -22,7 +22,7 @@ namespace Game.Common
         private Action<int, GAME_MESSAGE_TYPE> onReceiveGameMessage = null;
         public Action<float> onTimerUpdate = null;
         public Action onMatchFinished = null;
-        public Action<GAME_MESSAGE_TYPE, object> onReceiveServerGameMessage = null;
+        public Action<int, object> onReceiveMessage = null;
         #endregion
 
         #region PROPERTIES
@@ -85,9 +85,9 @@ namespace Game.Common
             onMatchFinished.Invoke();
         }
 
-        private void OnReceiveServerGameMessage(GAME_MESSAGE_TYPE messageType, object data)
+        private void OnReceiveMessage(int messageType, object data)
         {
-            onReceiveServerGameMessage?.Invoke(messageType, data);
+            onReceiveMessage?.Invoke(messageType, data);
         }
         #endregion
 
@@ -97,7 +97,7 @@ namespace Game.Common
             base.Initialize();
 
             clientHandler.SetAcions(SetRoomData, OnFullRoom, OnPlayersAmountChange, OnReceiveGameMessage, 
-                                    OnUpdateTimer, OnMatchFinished, OnReceiveServerGameMessage);
+                                    OnUpdateTimer, OnMatchFinished, OnReceiveMessage);
         }
         #endregion
     }

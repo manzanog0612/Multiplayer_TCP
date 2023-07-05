@@ -35,9 +35,9 @@ namespace Game.Match.Controllers
             SpawnTurrets();
         }
 
-        public void OnReceiveTurretData(GAME_MESSAGE_TYPE messageType, object data)
+        public void OnReceiveTurretData(int messageType, object data)
         {
-            switch (messageType)
+            switch ((GAME_MESSAGE_TYPE)messageType)
             {
                 case GAME_MESSAGE_TYPE.TURRET_ROTATION:
                     SetTurretRotation(data);

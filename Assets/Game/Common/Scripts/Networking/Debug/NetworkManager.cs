@@ -339,23 +339,8 @@ namespace MultiplayerLibrary.Entity
                 return;
             }
 
-            Debug.Log("Received data from client " + ipToId[clientConnectionData]);
-
-            wasLastMessageSane = true;
-
             StringMessage stringMessage = new StringMessage(StringMessage.Deserialize(data));
-
-            wasLastMessageSane = CheckMessageSanity(data, StringMessage.GetHeaderSize(), stringMessage.GetMessageSize(), stringMessage, stringMessage.GetMessageTail().messageOperationResult);
-
-            if (!wasLastMessageSane)
-            {
-                SendResendDataMessage((int)MESSAGE_TYPE.STRING, clientConnectionData.ip);
-                return;
-            }
-            else
-            {
-                OnReceiveGameEvent(clientConnectionData, data, MESSAGE_TYPE.STRING);
-            }
+            HandleMessageError(data, (int)MESSAGE_TYPE.STRING, stringMessage, stringMessage.GetMessageSize(), StringMessage.GetHeaderSize());
         }
         #endregion
 
@@ -413,23 +398,6 @@ namespace MultiplayerLibrary.Entity
         {
             wasLastMessageSane = CheckMessageSanity(data, headerSize, messageSize, semiTcpMessage, semiTcpMessage.GetMessageTail().messageOperationResult);
             ThrowInsaneMessageLogIfInsane(type);
-        }
-
-        protected virtual void OnReceiveGameEvent((IPEndPoint ip, float timeStamp) clientConnectionData, byte[] data, MESSAGE_TYPE messageType)
-        {
-            if (!ipToId.ContainsKey(clientConnectionData))
-            {
-                return;
-            }
-
-            int id = ipToId[clientConnectionData];
-
-            if (messageType == MESSAGE_TYPE.VECTOR3)
-            {
-                clients[id].position = Vector3Message.Deserialize(data);
-            }
-
-            onReceiveEvent?.Invoke(data, clientConnectionData.ip, id, messageType);
         }
         #endregion
     }
