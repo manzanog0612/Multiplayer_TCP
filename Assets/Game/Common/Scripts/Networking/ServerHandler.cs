@@ -1,8 +1,8 @@
-using Game.Common.Networking;
+using MultiplayerLibrary.Entity;
 using System;
 using UnityEngine;
 
-namespace MultiplayerLibrary.Entity
+namespace Game.Common.Networking
 {
     public class ServerHandler : MonoBehaviour
     {
@@ -17,11 +17,8 @@ namespace MultiplayerLibrary.Entity
 
         private void Start()
         {
-            string[] args = Environment.GetCommandLineArgs()[1].Split('-');        
+            string[] args = Environment.GetCommandLineArgs()[1].Split('-');
             serverNetworkManager.Start(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2]), int.Parse(args[3]));
-
-            //int port = MatchMaker.matchMakerPort;
-            //serverNetworkManager.Start(port, 0, 2, 3600);
         }
 
         private void Update()
