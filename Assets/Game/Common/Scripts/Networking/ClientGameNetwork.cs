@@ -230,6 +230,8 @@ namespace Game.Common.Networking
 
         protected override void ProcessNoticeMessage(IPEndPoint ip, byte[] data)
         {
+            base.ProcessNoticeMessage(ip, data);
+
             if (!wasLastMessageSane)
             {
                 SendResendDataMessage((int)MESSAGE_TYPE.NOTICE, ip);

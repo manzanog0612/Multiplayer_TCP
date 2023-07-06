@@ -30,7 +30,7 @@ namespace Game.Match.Entity.Player
 
         public void FixedUpdate()
         {
-            Processinput();
+            ProcessInput();
 
             ResetData();
         }
@@ -56,7 +56,7 @@ namespace Game.Match.Entity.Player
             characterController.DetectHitAction(Input.GetKeyDown(KeyCode.Space));
         }
 
-        private void Processinput()
+        private void ProcessInput()
         {
             if (movement != Vector2.zero)
             {

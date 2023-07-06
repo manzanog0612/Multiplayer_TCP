@@ -20,8 +20,6 @@ namespace Game.WaitRoom
                 {
                     waitRoomView.SetPlayersText(sessionHandler.RoomData.PlayersIn, sessionHandler.RoomData.PlayersMax);
                 });
-
-                
         }
         #endregion
 

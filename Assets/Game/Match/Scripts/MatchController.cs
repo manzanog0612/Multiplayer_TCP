@@ -5,7 +5,6 @@ using Game.Match.Entity.Camera;
 using Game.Match.Entity.Player;
 using MultiplayerLibrary.Interfaces;
 using MultiplayerLibrary.Reflection;
-using MultiplayerLibrary.Reflection.Attributes;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -241,7 +240,7 @@ namespace Game.Match
 
         private void CheckPlayerAlive()
         {
-            if (characterControllers[controlledPlayer].Life < 0)
+            if (characterControllers[controlledPlayer].Life <= 0)
             {
                 FinishMatch();
             }
